@@ -7,12 +7,6 @@ const CODE_SYMBOLS: Record<string, string> = {
   Digit4: '$',
 };
 
-const CODE_KEYS = [
-  { digit: '1', symbol: '!' },
-  { digit: '3', symbol: '#' },
-  { digit: '4', symbol: '$' },
-];
-
 export default class FifthRoomStrategy extends RoomStrategy {
   readonly prompt = '';
 
@@ -24,30 +18,19 @@ export default class FifthRoomStrategy extends RoomStrategy {
   }
 
   protected override onEnter(): void {
-    this.addLabel(640, 175, 'CÓDIGO', 16, '#777777');
-    this.addLabel(640, 240, '1  3  4', 48, '#111111');
+    this.addRoomObject(this.scene.add.image(640, 235, 'lock-icon').setDisplaySize(180, 180));
+    this.addLabel(640, 350, '134', 42, '#111111');
 
-    this.addRoomObject(
-      this.scene.add.rectangle(640, 350, 430, 72, 0xffffff).setStrokeStyle(2, 0x111111),
-    );
     this.inputDisplay = this.addRoomObject(
-      this.scene.add.text(450, 350, '', {
+      this.scene.add.text(640, 475, '', {
         color: '#111111',
         fontFamily: 'IBM Plex Mono, Menlo, monospace',
-        fontSize: '28px',
-      }).setOrigin(0, 0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)),
+        fontSize: '36px',
+      }).setOrigin(0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)),
     );
 
-    CODE_KEYS.forEach(({ digit, symbol }, index) => {
-      const x = 500 + index * 140;
-      this.addRoomObject(
-        this.scene.add.rectangle(x, 485, 108, 72, 0xffffff).setStrokeStyle(2, 0x111111),
-      );
-      this.addLabel(x - 8, 485, digit, 30, '#111111');
-      this.addLabel(x + 31, 465, symbol, 14, '#777777');
-    });
+    this.addRoomObject(this.scene.add.rectangle(640, 508, 340, 2, 0xd0d0d0));
 
-    this.addLabel(640, 570, 'ENTER PARA CONFIRMAR', 14, '#777777');
     this.showHint('La cerradura pide tres caracteres. Qué tranquilidad: al menos parecen números.');
   }
 
