@@ -42,9 +42,9 @@ export default class RoomFactory {
       case 7:
         return new SeventhRoomStrategy(scene, progress, actions);
       case 8:
-        return new AlternatingShiftRoomStrategy(scene, progress, actions);
-      case 9:
         return new ShiftTabRoomStrategy(scene, progress, actions);
+      case 9:
+        return new AlternatingShiftRoomStrategy(scene, progress, actions);
       case 10:
         return new HoldShiftRoomStrategy(scene, progress, actions);
       case 11:

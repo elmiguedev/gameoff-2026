@@ -16,6 +16,7 @@ interface PendingShiftPress {
 
 export default class GameScene extends Phaser.Scene {
   private static readonly SHIFT_TAB_GRACE_MS = 180;
+  private static readonly ROOM_ADVANCE_DELAY_MS = 900;
 
   private readonly progress: RoomProgress = { completedRooms: new Set<number>() };
   private readonly physicallyHeldShifts = new Set<ShiftSide>();
@@ -30,6 +31,7 @@ export default class GameScene extends Phaser.Scene {
   private returningToStart = false;
   private inControlRoom = false;
   private waitingForEntryShiftRelease = true;
+  private roomAdvanceAvailableAt = 0;
 
   private roomLabel!: Phaser.GameObjects.Text;
   private roomPrompt!: Phaser.GameObjects.Text;
@@ -57,6 +59,7 @@ export default class GameScene extends Phaser.Scene {
     this.progress.backdoorAttempt = false;
     this.progress.enteredControlRoomEarly = data.enteredControlRoomEarly ?? false;
     this.waitingForEntryShiftRelease = !data.entryShiftAlreadyReleased;
+    this.roomAdvanceAvailableAt = 0;
     this.createBackground();
     this.createRoomLabel();
     this.createRoomPrompt();
@@ -101,7 +104,13 @@ export default class GameScene extends Phaser.Scene {
 
     this.roomCompleted = true;
     this.progress.completedRooms.add(this.currentRoomNumber);
-    this.statusText.setText(`${closingText}\n\nPRESIONÁ SHIFT PARA CONTINUAR`);
+    this.roomAdvanceAvailableAt = Date.now() + GameScene.ROOM_ADVANCE_DELAY_MS;
+    const completedRoomNumber = this.currentRoomNumber;
+    this.statusText.setText(`${closingText}\n\nESPERÁ UN MOMENTO…`);
+    this.time.delayedCall(GameScene.ROOM_ADVANCE_DELAY_MS, () => {
+      if (!this.roomCompleted || this.currentRoomNumber !== completedRoomNumber) return;
+      this.statusText.setText(`${closingText}\n\nPRESIONÁ SHIFT PARA CONTINUAR`);
+    });
   }
 
   public finishGame(closingText: string): void {
@@ -267,6 +276,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     if (this.roomCompleted) {
+      if (Date.now() < this.roomAdvanceAvailableAt) return;
       if (this.returningToStart && !this.inControlRoom) {
         this.showHint('No era hacia adelante. Probá con la otra combinación.');
         return;
@@ -395,8 +405,8 @@ export default class GameScene extends Phaser.Scene {
       12: '¿Ya estás revisando todo? Todavía no había terminado de despedirme.',
       11: 'Esta ya la conocés. No hace falta que la arregles otra vez.',
       10: '¿Por qué estás volviendo? La salida estaba para el otro lado.',
-      9: 'No sigas mis indicaciones. Ya te ayudé bastante, ¿no?',
-      8: 'La salida no era una prueba de velocidad. Aunque veo que te gusta insistir.',
+      9: 'La salida no era una prueba de velocidad. Aunque veo que te gusta insistir.',
+      8: 'No sigas mis indicaciones. Ya te ayudé bastante, ¿no?',
       7: 'Ya los dejaste a todos en su lugar. No hace falta volver a contarlos.',
       6: 'No hay nada acá que necesite más tiempo.',
       5: 'Esa cerradura ya abrió. No vas a encontrar otra cosa detrás.',

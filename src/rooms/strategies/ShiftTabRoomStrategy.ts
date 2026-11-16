@@ -15,7 +15,7 @@ export default class ShiftTabRoomStrategy extends RoomStrategy {
     this.elapsed = 0;
     this.hintLevel = 0;
 
-    if (this.progress.completedRooms.has(9)) {
+    if (this.progress.completedRooms.has(8)) {
       this.complete('Volviste a esta. Bien: esta vez sí quedó registrado. Cuando quieras, seguimos.');
       return;
     }
