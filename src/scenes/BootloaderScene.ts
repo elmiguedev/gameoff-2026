@@ -5,6 +5,10 @@ export default class BootloaderScene extends Phaser.Scene {
     super('BootloaderScene');
   }
 
+  preload(): void {
+    this.load.image('shift-logo', '/assets/images/shift.png');
+  }
+
   create(): void {
     this.cameras.main.setBackgroundColor('#ffffff');
 

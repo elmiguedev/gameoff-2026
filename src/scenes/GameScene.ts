@@ -140,8 +140,9 @@ export default class GameScene extends Phaser.Scene {
 
   private createStatusText(): void {
     this.statusText = this.addText(640, 620, '', {
-      color: '#555555',
-      fontSize: '18px',
+      color: '#222222',
+      fontSize: '19px',
+      fontStyle: '500',
     }).setOrigin(0.5);
   }
 
