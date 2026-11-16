@@ -66,14 +66,15 @@ export default class FourthRoomStrategy extends RoomStrategy {
   private submitPassword(): void {
     const input = this.typedCharacters.map(({ value }) => value).join('');
     const usedCapsLock = this.typedCharacters.some(({ capsLockActive }) => capsLockActive);
-    const firstLetterUsedShift = this.typedCharacters[0]?.shiftHeld === true;
+    const everyLetterUsedShift = this.typedCharacters.length > 0
+      && this.typedCharacters.every(({ shiftHeld }) => shiftHeld);
 
     if (usedCapsLock) {
       this.showHint('Veo que todavía no estamos entendiendo de qué va todo esto…');
       return;
     }
 
-    if (input === 'Shift' && firstLetterUsedShift) {
+    if (input === 'SHIFT' && everyLetterUsedShift) {
       this.complete('Bien. No todas las mayúsculas son iguales.');
       return;
     }
