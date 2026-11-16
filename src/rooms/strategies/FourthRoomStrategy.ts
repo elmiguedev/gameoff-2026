@@ -1,50 +1,39 @@
 import type Phaser from 'phaser';
 import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
 
+interface TypedCharacter {
+  value: string;
+  capsLockActive: boolean;
+  shiftHeld: boolean;
+}
+
 export default class FourthRoomStrategy extends RoomStrategy {
   readonly prompt = '';
 
-  private input = '';
-  private capsLockEnabled = false;
+  private readonly typedCharacters: TypedCharacter[] = [];
   private inputDisplay?: Phaser.GameObjects.Text;
-  private capsLockLabel?: Phaser.GameObjects.Text;
-  private capsLockIndicator?: Phaser.GameObjects.Rectangle;
 
   constructor(scene: Phaser.Scene, progress: RoomProgress, actions: RoomActions) {
     super(scene, progress, actions);
   }
 
   protected override onEnter(): void {
-    this.addLabel(640, 165, 'CONTRASEÑA EXACTA', 16, '#777777');
-    this.addLabel(640, 225, 'Shift', 48, '#111111');
-
-    this.addRoomObject(
-      this.scene.add.rectangle(640, 345, 500, 76, 0xffffff).setStrokeStyle(2, 0x111111),
-    );
+    this.addLabel(640, 165, 'CONTRASEÑA EXACTA', 16, '#666666');
 
     this.inputDisplay = this.addRoomObject(
-      this.scene.add.text(410, 345, '', {
+      this.scene.add.text(640, 295, '', {
         color: '#111111',
         fontFamily: 'IBM Plex Mono, Menlo, monospace',
         fontSize: '28px',
-      }).setOrigin(0, 0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)),
+      }).setOrigin(0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)),
     );
 
     this.addRoomObject(
-      this.scene.add.rectangle(640, 485, 260, 68, 0xffffff).setStrokeStyle(2, 0x111111),
-    );
-    this.capsLockLabel = this.addRoomObject(
-      this.scene.add.text(640, 485, 'CAPS LOCK: OFF', {
-        color: '#111111',
-        fontFamily: 'IBM Plex Mono, Menlo, monospace',
-        fontSize: '16px',
-      }).setOrigin(0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)),
-    );
-    this.capsLockIndicator = this.addRoomObject(
-      this.scene.add.rectangle(755, 464, 8, 8, 0xffffff).setStrokeStyle(1, 0x111111),
+      this.scene.add.rectangle(640, 328, 340, 2, 0xd0d0d0),
     );
 
-    this.addLabel(640, 555, 'ENTER PARA CONFIRMAR', 14, '#777777');
+    this.addRoomObject(this.scene.add.image(640, 455, 'caps-key').setDisplaySize(520, 520 / 3));
+
     this.showHint('Qué suerte: acá está Caps Lock. La tecla perfecta para escribir TODO COMO SI ESTUVIERAS ENOJADO.');
   }
 
@@ -53,14 +42,8 @@ export default class FourthRoomStrategy extends RoomStrategy {
   protected override onKeyDown(event: KeyboardEvent): void {
     if (event.repeat) return;
 
-    if (event.code === 'CapsLock') {
-      this.capsLockEnabled = !this.capsLockEnabled;
-      this.updateCapsLockIndicator();
-      return;
-    }
-
     if (event.code === 'Backspace') {
-      this.input = this.input.slice(0, -1);
+      this.typedCharacters.pop();
       this.updateInputDisplay();
       return;
     }
@@ -70,22 +53,28 @@ export default class FourthRoomStrategy extends RoomStrategy {
       return;
     }
 
-    if (!event.code.startsWith('Key') || event.code.length !== 4) return;
+    if (!/^[a-z]$/i.test(event.key)) return;
 
-    const letter = event.code.slice(3).toLowerCase();
-    const isUppercase = this.capsLockEnabled !== event.shiftKey;
-    this.input += isUppercase ? letter.toUpperCase() : letter;
+    this.typedCharacters.push({
+      value: event.key,
+      capsLockActive: event.getModifierState('CapsLock'),
+      shiftHeld: event.shiftKey,
+    });
     this.updateInputDisplay();
   }
 
   private submitPassword(): void {
-    if (this.input === 'Shift') {
-      this.complete('Una mayúscula era suficiente. Caps Lock tiene esa dificultad para medir.');
+    const input = this.typedCharacters.map(({ value }) => value).join('');
+    const usedCapsLock = this.typedCharacters.some(({ capsLockActive }) => capsLockActive);
+    const firstLetterUsedShift = this.typedCharacters[0]?.shiftHeld === true;
+
+    if (usedCapsLock) {
+      this.showHint('Veo que todavía no estamos entendiendo de qué va todo esto…');
       return;
     }
 
-    if (this.input === 'SHIFT') {
-      this.showHint('El juego se llama Shift. No Caps Lock.');
+    if (input === 'Shift' && firstLetterUsedShift) {
+      this.complete('Bien. No todas las mayúsculas son iguales.');
       return;
     }
 
@@ -93,12 +82,7 @@ export default class FourthRoomStrategy extends RoomStrategy {
   }
 
   private updateInputDisplay(): void {
-    this.inputDisplay?.setText(this.input || '');
-  }
-
-  private updateCapsLockIndicator(): void {
-    this.capsLockLabel?.setText(`CAPS LOCK: ${this.capsLockEnabled ? 'ON' : 'OFF'}`);
-    this.capsLockIndicator?.setFillStyle(this.capsLockEnabled ? 0x111111 : 0xffffff);
+    this.inputDisplay?.setText(this.typedCharacters.map(({ value }) => value).join(''));
   }
 
   private addLabel(
@@ -113,6 +97,7 @@ export default class FourthRoomStrategy extends RoomStrategy {
         color,
         fontFamily: 'IBM Plex Mono, Menlo, monospace',
         fontSize: `${fontSize}px`,
+        fontStyle: '300',
       }).setOrigin(0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)),
     );
   }
