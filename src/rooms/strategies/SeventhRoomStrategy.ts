@@ -3,9 +3,11 @@ import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } fro
 
 const GRID_COLUMNS = 3;
 const GRID_ROWS = 2;
-const SQUARE_SIZE = 72;
+const SQUARE_SIZE = 80;
 const SQUARE_GAP = 24;
 const SQUARE_COUNT = GRID_COLUMNS * GRID_ROWS;
+const GRID_CENTER_Y = 330;
+const CORNER_RADIUS = 8;
 
 export default class SeventhRoomStrategy extends RoomStrategy {
   readonly prompt = '';
@@ -26,7 +28,7 @@ export default class SeventhRoomStrategy extends RoomStrategy {
     const gridWidth = GRID_COLUMNS * SQUARE_SIZE + (GRID_COLUMNS - 1) * SQUARE_GAP;
     const gridHeight = GRID_ROWS * SQUARE_SIZE + (GRID_ROWS - 1) * SQUARE_GAP;
     const startX = 640 - gridWidth / 2 + SQUARE_SIZE / 2;
-    const startY = 360 - gridHeight / 2 + SQUARE_SIZE / 2;
+    const startY = GRID_CENTER_Y - gridHeight / 2 + SQUARE_SIZE / 2;
 
     for (let index = 0; index < SQUARE_COUNT; index += 1) {
       const column = index % GRID_COLUMNS;
@@ -36,7 +38,8 @@ export default class SeventhRoomStrategy extends RoomStrategy {
       const square = this.addRoomObject(
         this.scene.add
           .rectangle(x, y, SQUARE_SIZE, SQUARE_SIZE, 0xffffff)
-          .setStrokeStyle(2, 0x111111)
+          .setRounded(CORNER_RADIUS)
+          .setStrokeStyle(3, 0x111111)
           .setInteractive({ useHandCursor: true }),
       );
 
