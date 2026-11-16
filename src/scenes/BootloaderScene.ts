@@ -10,6 +10,8 @@ export default class BootloaderScene extends Phaser.Scene {
     this.load.image('mouse-cursor', '/assets/images/mouse.png');
     this.load.image('caps-key', '/assets/images/caps.png');
     this.load.image('lock-icon', '/assets/images/lock.png');
+    this.load.image('clock', '/assets/images/clock.png');
+    this.load.image('clock-finished', '/assets/images/clock_finished.png');
   }
 
   create(): void {
