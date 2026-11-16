@@ -3,10 +3,16 @@ import type { RoomActions, RoomProgress } from './RoomStrategy';
 import type Phaser from 'phaser';
 
 export default class SecondRoomStrategy extends RoomStrategy {
-  readonly prompt = 'SHIFT';
+  readonly prompt = '';
 
   constructor(scene: Phaser.Scene, progress: RoomProgress, actions: RoomActions) {
     super(scene, progress, actions);
+  }
+
+  protected override onEnter(): void {
+    const logo = this.scene.add.image(640, 350, 'shift-logo');
+    logo.setDisplaySize(520, 520 / 3);
+    this.addRoomObject(logo);
   }
 
   protected onShiftDown(side: ShiftSide): void {
