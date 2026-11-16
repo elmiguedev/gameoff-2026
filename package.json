@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "bun check src/index.ts src/scenes/BootloaderScene.ts src/scenes/StartScene.ts src/scenes/GameScene.ts src/rooms/RoomFactory.ts src/rooms/strategies/RoomStrategy.ts src/rooms/strategies/FirstRoomStrategy.ts src/rooms/strategies/SecondRoomStrategy.ts"
+    "typecheck": "bun check src/index.ts src/input/ShiftMorseEasterEgg.ts src/scenes/BootloaderScene.ts src/scenes/StartScene.ts src/scenes/GameScene.ts src/scenes/MorseVictoryScene.ts src/rooms/RoomFactory.ts src/rooms/strategies/RoomStrategy.ts src/rooms/strategies/FirstRoomStrategy.ts src/rooms/strategies/SecondRoomStrategy.ts src/rooms/strategies/ThirdRoomStrategy.ts src/rooms/strategies/FourthRoomStrategy.ts src/rooms/strategies/FifthRoomStrategy.ts src/rooms/strategies/SixthRoomStrategy.ts src/rooms/strategies/SeventhRoomStrategy.ts src/rooms/strategies/ShiftTabRoomStrategy.ts src/rooms/strategies/HoldShiftRoomStrategy.ts src/rooms/strategies/ClickableShiftRoomStrategy.ts src/rooms/strategies/ReleaseShiftRoomStrategy.ts src/rooms/strategies/MorseRadioRoomStrategy.ts src/rooms/strategies/AlternatingShiftRoomStrategy.ts src/rooms/strategies/NarratorControlRoomStrategy.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -1,12 +1,12 @@
 import RoomStrategy, { type ShiftSide } from './RoomStrategy';
-import type GameScene from '../../scenes/GameScene';
-import type { RoomProgress } from './RoomStrategy';
+import type { RoomActions, RoomProgress } from './RoomStrategy';
+import type Phaser from 'phaser';
 
 export default class FirstRoomStrategy extends RoomStrategy {
   readonly prompt = 'SHIFT';
 
-  constructor(scene: GameScene, progress: RoomProgress) {
-    super(scene, progress);
+  constructor(scene: Phaser.Scene, progress: RoomProgress, actions: RoomActions) {
+    super(scene, progress, actions);
   }
 
   protected onShiftDown(side: ShiftSide): void {

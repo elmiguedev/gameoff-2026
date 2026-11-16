@@ -73,76 +73,83 @@ Los siguientes son los planteos acordados hasta ahora. El orden es una propuesta
 
 ### 5. El código que parece numérico
 
-- **Escena:** Cerradura con un código de varios caracteres que parece numérico, por ejemplo `1234`. Cerca hay un teclado dibujado: sobre las teclas 1, 2, 3 y 4 se ven, en menor tamaño, `!`, `@`, `#` y `$`.
-- **Intro:** «La cerradura pide cuatro caracteres. Qué tranquilidad: al menos parecen números.»
-- **Problema:** Introducir literalmente `1234` no funciona. El objetivo es producir los símbolos asociados a esas teclas, no los dígitos impresos en grande.
-- **Hint:** «La cerradura no quiere el nombre de las teclas. Quiere lo que sale cuando las cambiás.» Una pista posterior puede destacar los símbolos pequeños del teclado.
-- **Solución propuesta:** Mantener Shift y pulsar 1, 2, 3 y 4 para escribir `!@#$`.
-- **Cierre:** «No eran números. Eran números con otra identidad. Bastante comprensible.»
-- **Nota:** Confirmar en el prototipo que la secuencia y los símbolos se lean con claridad y no dependan de una distribución de teclado inesperada.
+- **Escena:** Cerradura con el código `134`, y tres teclas dibujadas: 1/!, 3/# y 4/$.
+- **Intro:** «La cerradura pide tres caracteres. Qué tranquilidad: al menos parecen números.»
+- **Problema:** Introducir literalmente `134` no funciona. Hay que producir los símbolos alternativos de esas teclas.
+- **Hint:** «La cerradura no quiere los nombres de las teclas. Quiere lo que sale cuando las modificás.»
+- **Solución propuesta:** Mantener Shift y pulsar 1, 3 y 4 para escribir `!#$`.
+- **Cierre:** «No eran números. Eran las mismas teclas con otra salida.»
+- **Nota:** Se usan 1, 3 y 4 para mantener el acertijo independiente de la distribución de teclado más común en español y evitar que el símbolo de Shift+2 varíe.
 
 ### 6. Tómate tu tiempo
 
-- **Escena:** Puerta cerrada, silla vacía, taza y reloj de arena. La composición permanece quieta; el reloj puede ser el único indicador que avanza.
+- **Escena:** Fondo blanco con una puerta cerrada, una silla vacía, una mesa con una taza y un reloj minimalista.
 - **Intro:** «La puerta parece cerrada. La silla parece cómoda. No es una invitación; es una observación.»
-- **Problema:** No hay un mecanismo que activar.
-- **Hint:** Si el jugador prueba teclas: «No todas las salas necesitan que las toques.»
-- **Solución:** No hacer nada y esperar unos segundos. La puerta se abre sola.
+- **Problema:** No hay un mecanismo que activar; el temporizador de espera vuelve a cero con cada pulsación.
+- **Hint:** Cada pulsación reinicia la espera y genera una frase nueva del Narrador. Las frases progresan desde comentarios burlones hasta una indicación más clara de que conviene dejar de tocar teclas.
+- **Solución:** No hacer nada y esperar siete segundos desde la última pulsación. La puerta se abre sola.
 - **Cierre:** «¡Se abrió! Esperar era todo el plan. Sí, yo también esperaba algo más emocionante.»
 
 ### 7. Lo que crece en el medio
 
-- **Escena:** Dos teclas Shift flanquean un círculo o una barra vacía.
-- **Intro:** «Hay algo creciendo ahí en el medio. No sé qué es, pero claramente necesita presión.»
-- **Problema:** El indicador no se llena pulsando repetidamente el mismo Shift.
-- **Hint:** Si repite un lado: «Lo estás haciendo crecer de un solo lado.»
-- **Solución:** Alternar Shift izquierdo y derecho con cada pulsación.
-- **Cierre:** «Perfecto. Alternancia. Una idea con la que hasta una barra puede trabajar.»
+- **Escena:** Seis cuadrados vacíos en una grilla, sin teclas dibujadas ni instrucciones.
+- **Problema:** Un clic pinta un cuadrado y desmarca los demás. Para conservar varias selecciones hay que hacer clic con Shift mantenido.
+- **Hint/comentarios:** El Narrador comenta los cambios sin nombrar la solución; por ejemplo: «Uno. Decisión firme», «Veo que cambiaste de opinión» y, al conservar una selección anterior, «Ah. Esta vez guardaste lo anterior».
+- **Solución:** Pintar los seis cuadrados usando Shift+clic para acumular selecciones.
+- **Cierre:** «Mirá vos. Al final había lugar para todos.»
 
-### 8. Volver atrás
+### 8. Alternar con ritmo
 
-- **Escena:** Una transición o navegación entre salas, sin botón visible de “anterior”.
-- **Intro:** Puede omitirse.
-- **Problema:** El jugador necesita volver a una sala previa.
-- **Hint:** «Hay combinaciones que no te llevan hacia adelante.» Una pista posterior puede sugerir que Tab suele avanzar entre elementos.
+- **Escena:** Fondo vacío; al inicio no se ve ningún indicador. El primer Shift hace aparecer un círculo negro sin borde ni rótulos.
+- **Problema:** El círculo crece al alternar rápidamente entre ambos Shift y se achica continuamente si el jugador se detiene o pulsa con demasiada lentitud. Repetir el mismo lado no suma.
+- **Hint:** No hay pista inicial; la mecánica se descubre por experimentación.
+- **Solución:** Alternar rápidamente Shift izquierdo y derecho hasta llenar el círculo.
+- **Cierre:** «Ah, trabajo en equipo. Los dos Shifts encontraron algo en común.»
+
+### 9. Volver atrás
+
+- **Escena:** Sala blanca y despejada; sin botón visible de “anterior”.
+- **Intro/pistas:** «El camino hasta acá parece bastante convencido de una sola dirección.» Luego: «Tab suele avanzar entre opciones. No siempre hace falta avanzar» y «Hay combinaciones que no te llevan hacia adelante».
+- **Problema:** El jugador necesita volver a una sala previa, pero el avance normal solo mira hacia adelante.
 - **Solución:** Shift+Tab vuelve a la sala anterior.
 - **Cierre:** «Volviste. Sabía que en algún momento ibas a querer revisar tus decisiones.»
 - **Nota:** La combinación debe enseñarse antes de que el juego la necesite para resolver una sala o el final.
 
-### 9. Mantener hasta que termine
+### 10. Mantener hasta que termine
 
 - **Escena:** Puerta, reloj sin números e indicador circular vacío.
-- **Intro:** «La puerta parece tener una condición. Por suerte, esta sala tiene un reloj con un talento muy específico.»
+- **Intro:** «La puerta espera.»
 - **Problema:** Pulsaciones cortas no completan el indicador.
 - **Hint:** «No todas las respuestas son una pulsación.»
 - **Solución:** Mantener Shift durante el tiempo suficiente para llenar el indicador.
 - **Cierre:** «¡Eso era! Mantener una tecla. Una hazaña que recordaré durante, como mínimo, tres segundos.»
 
-### 10. Ah, cierto
+### 11. Ah, cierto
 
-- **Escena:** Vuelve la tecla Shift dibujada de la sala 3, esta vez sobre una placa que sí parece un botón.
+- **Escena:** Vuelve el mismo dibujo de la tecla Shift y el cursor de la sala 3, ahora sobre una placa. La tecla responde al clic.
 - **Intro:** «Qué familiar. La tecnología avanza: ahora la tecla dibujada tiene una placa.»
+- **Reacción a Tab:** El Narrador responde: «Tab no. Esta sala ya tiene suficientes teclas con problemas de identidad.»
 - **Problema:** El jugador recuerda que antes hacer clic había sido un error.
 - **Hint:** «A veces una tecla dibujada es solo un dibujo. A veces es otra cosa.»
 - **Solución:** Hacer clic en la tecla dibujada.
 - **Cierre:** «¡Ah, cierto! Era un botón. Bien visto… cuando finalmente lo viste.»
 
-### 11. Soltar
+### 12. Soltar
 
 - **Escena:** Puerta cerrada e indicador `SHIFT: LIBERADO`. La sala parece no responder.
-- **Problema:** La puerta necesita que el evento de soltar Shift ocurra dentro de esta sala. Llegar con la tecla ya liberada no basta.
+- **Problema:** Apretar y soltar Shift dentro de la sala no funciona. La puerta necesita que Shift ya venga apretado desde la sala anterior y se suelte una vez que esta sala haya empezado.
 - **Hint:** «Esta sala no vio el principio de la acción.»
 - **Solución propuesta:** Usar Shift+Tab para volver a la sala anterior. Repetirla y mantener Shift durante la transición de regreso; soltarlo una vez dentro de esta sala.
 - **Cierre:** «Ahí está. Esta vez entraste con algo todavía apretado.»
 - **Nota:** Esta mecánica requiere que la transición controle deliberadamente qué eventos de teclado recibe cada sala. Evitar que se resuelva accidentalmente al soltar durante la pantalla de carga.
 
-### 12. La radio
+### 13. La radio
 
-- **Escena:** Radio sencilla y silueta de un barco en problemas. No aparece escrito S.O.S. ni la secuencia de puntos y rayas.
+- **Escena:** Radio sencilla y silueta de un barco en problemas. No aparecen escritos S.O.S., puntos/rayas ni indicadores de progreso decorativos.
 - **Intro:** «El barco tiene problemas. La radio funciona. La tripulación, por ahora, no está aportando mucho.»
 - **Problema:** Enviar una señal internacional de auxilio usando Shift.
 - **Hint gradual:** «No hace falta hablar el mismo idioma.» Después: «Mandá una señal reconocible.» Última pista: «Tres cortas, tres largas, tres cortas.»
-- **Solución:** Transmitir S.O.S. en Morse con pulsaciones cortas y largas de Shift.
+- **Solución:** Transmitir la señal internacional de auxilio en Morse con pulsaciones cortas y largas de Shift. La sala compara la duración relativa de los tres pulsos largos con los seis cortos; no exige milisegundos exactos ni impone pausas máximas entre pulsaciones. La interfaz nunca muestra el nombre ni la secuencia escrita.
 - **Cierre:** «Recibido. El barco está a salvo. La tripulación sigue sin aportar mucho.»
 - **Nota:** Los tiempos deben ser generosos; la sala busca reconocimiento del patrón, no reflejos.
 
@@ -155,11 +162,11 @@ Los siguientes son los planteos acordados hasta ahora. El orden es una propuesta
 
 ## Final
 
-### Concepto actual: el narrador no quiere que el jugador vuelva
+### El narrador no quiere que el jugador vuelva
 
-Tras resolver la última sala, aparece una referencia visual clara a la primera: la pantalla negra y la tecla Shift. El jugador entiende que puede recorrer el camino en reversa con Shift+Tab.
+Al continuar desde la sala 13, el recorrido entra en un epílogo hacia atrás, empezando por la sala 12. El jugador usa Shift+Tab para recorrer las salas ya resueltas en orden inverso, hasta volver a la primera.
 
-No vuelve a resolver los acertijos: atraviesa las salas como un epílogo. Las escenas son las mismas, pero el Narrador se inquieta progresivamente. Al principio bromea con que el jugador está revisando; después intenta convencerlo de que no hace falta; finalmente deja de parecer un guía y revela que quiere mantenerlo dentro del recorrido.
+No vuelve a resolver los acertijos: atraviesa las mismas escenas como un epílogo. El Narrador se inquieta progresivamente. Al principio bromea con que el jugador está revisando; después intenta convencerlo de que no hace falta; finalmente deja de parecer un guía y revela que quiere mantenerlo dentro del recorrido.
 
 Ejemplos de progresión del tono:
 
@@ -168,14 +175,39 @@ Ejemplos de progresión del tono:
 - «No sigas mis indicaciones. Ya te ayudé bastante, ¿no?»
 - «No hay nada antes del principio. Volvé a la puerta.»
 
-Al llegar a la primera sala, el jugador ya conoce la interacción inicial. En vez de avanzar con Shift, usa Shift+Tab una vez más: la navegación continúa hacia un estado que no se había visto, anterior a la primera sala.
+Al llegar a la primera sala, el jugador ya conoce la interacción inicial. En vez de avanzar con Shift, usa Shift+Tab una vez más: la navegación continúa hacia la sala de control del Narrador.
 
 ### Sala de control del Narrador
 
 - **Escena:** Espacio 2D minimalista: mesa, monitor con el índice de salas y un panel de control textual que indica `NARRADOR: ACTIVO`. Sin personaje, micrófono ni globo de caricatura.
 - **Revelación:** El Narrador no solo guiaba el recorrido; estaba operándolo desde esta sala y no quiere que el jugador salga de su ciclo.
-- **Interacción de cierre propuesta:** El panel se navega con teclado. Usar Shift+Tab para recorrer el foco hacia atrás hasta una opción que no estaba a la vista, como `CERRAR SESIÓN DEL NARRADOR`, y confirmarla. La consecuencia narrativa puede ser que el jugador tome el control del sistema; la resolución, sin embargo, debe depender de la función de Shift+Tab y no del significado literal de “cambiar de operador”.
-- **Cierre del Narrador:** «Bueno. Fue un placer guiarte. La evaluación de tu desempeño… la va a hacer otra persona.» El texto del Narrador deja de aparecer y aparece el título.
+- **Interacción de cierre:** El panel se navega con teclado. Usar Shift+Tab para recorrer el foco hacia atrás hasta la opción oculta `CERRAR SESIÓN DEL NARRADOR` y confirmarla con Enter. La resolución depende de la función de Shift+Tab, no del significado literal de “cambiar de operador”.
+- **Cierre del Narrador:** «Bueno. Fue un placer guiarte. La evaluación de tu desempeño… la va a hacer otra persona.» El texto del Narrador deja de aparecer y vuelve el título.
+
+### Ideas para el final
+
+1. **Recorrido inverso y foco oculto —actual en el prototipo:** volver por las salas y usar Shift+Tab en la sala de control para revelar la opción oculta de cerrar la sesión.
+2. **Ejecutar con modificador:** la consola muestra un comando de cierre; Enter agrega una línea y Shift+Enter lo ejecuta.
+3. **La salida mentirosa:** el botón visible `VOLVER AL RECORRIDO` normalmente devuelve al jugador al inicio; Shift+clic realiza la acción opuesta y cierra la sesión del Narrador.
+4. **Borrado recuperable o definitivo:** Delete/Backspace borra el proceso del Narrador, pero vuelve a aparecer al poco tiempo. Shift+Delete lo elimina definitivamente.
+5. **Seleccionar varios procesos:** aparece una lista de procesos. Space selecciona el proceso enfocado; hay que seleccionar más de uno usando Shift para ampliar la selección y luego borrarlos con Delete/Backspace o confirmando la acción.
+
+Las ideas quedan conservadas mientras se decide cuál será la resolución definitiva.
+
+### Final alternativo: entrar por el backdoor
+
+- **Implementado:** si el jugador usa Shift+Tab desde la pantalla inicial, llega a la sala de control antes de empezar el recorrido.
+- El acceso está bloqueado (`PERMISOS INSUFICIENTES` / recorrido `0/13`) y el Narrador lo devuelve al título; la visita queda guardada para esa partida.
+- Si más tarde completa el recorrido inverso y vuelve a la sala de control, el Narrador lo reconoce en el diálogo de entrada y en el cierre.
+- Esta visita temprana funciona como presagio, no como atajo para saltarse el juego.
+
+## Easter eggs
+
+### Victoria secreta con Morse
+
+- **Implementado:** el jugador puede transmitir la señal de auxilio en Morse con pulsaciones cortas y largas de Shift desde la pantalla inicial o cualquier sala salvo la 13. En la sala 13, esa señal resuelve el acertijo normal y permite llegar al final principal, en lugar de saltarlo.
+- Al reconocerla, gana inmediatamente y aparece una escena de victoria dedicada, aunque no haya completado la sala actual.
+- La detección es global, ignora combinaciones con otras teclas y compara la duración relativa de los pulsos, con pausas generosas. No muestra la secuencia ni la solución de forma explícita.
 
 ### Intención del final
 
