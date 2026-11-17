@@ -9,40 +9,23 @@ export default class ClickableShiftRoomStrategy extends RoomStrategy {
   }
 
   protected override onEnter(): void {
-    this.addRoomObject(this.scene.add.rectangle(640, 350, 410, 170, 0xffffff).setStrokeStyle(2, 0xaaaaaa));
-    const key = this.addRoomObject(
-      this.scene.add.rectangle(640, 350, 360, 120, 0xffffff)
-        .setStrokeStyle(2, 0x111111)
-        .setInteractive({ useHandCursor: true }),
-    );
-    this.addRoomObject(this.scene.add.text(640, 350, 'SHIFT', {
-      color: '#111111',
-      fontFamily: 'IBM Plex Mono, Menlo, monospace',
-      fontSize: '24px',
-    }).setOrigin(0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)));
+    const shiftLogo = this.scene.add.image(640, 350, 'shift-logo');
+    shiftLogo
+      .setDisplaySize(520, 520 / 3)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => this.activateKey());
+    this.addRoomObject(shiftLogo);
 
-    const cursor = this.scene.add.graphics();
-    cursor.fillStyle(0xffffff, 1);
-    cursor.lineStyle(3, 0x111111, 1);
-    cursor.beginPath();
-    cursor.moveTo(0, 0);
-    cursor.lineTo(0, 34);
-    cursor.lineTo(9, 25);
-    cursor.lineTo(16, 39);
-    cursor.lineTo(22, 36);
-    cursor.lineTo(15, 23);
-    cursor.lineTo(28, 23);
-    cursor.closePath();
-    cursor.fillPath();
-    cursor.strokePath();
-    cursor.setPosition(790, 390);
-    this.addRoomObject(cursor);
+    const mouseCursor = this.scene.add.image(799, 399, 'mouse-cursor');
+    mouseCursor.setDisplaySize(78, 71);
+    this.addRoomObject(mouseCursor);
 
-    key.on('pointerdown', () => this.activateKey());
-    this.showHint('Qué familiar. La tecnología avanza: ahora la tecla tiene una placa.');
+    this.showHint('Qué familiar. Esta vez el dibujo espera que lo pulses.');
   }
 
-  protected onShiftDown(_side: ShiftSide): void {}
+  protected onShiftDown(_side: ShiftSide): void {
+    this.showHint('¿Shift? ¿En serio? Esta vez hasta el dibujo te estaba señalando qué hacer.');
+  }
 
   protected override onKeyDown(event: KeyboardEvent): void {
     if (event.code !== 'Tab') return;

@@ -10,9 +10,7 @@ export default class MorseRadioRoomStrategy extends RoomStrategy {
   private pressStartedAt?: number;
   private pulseDurations: number[] = [];
   private attempts = 0;
-  private elapsed = 0;
-  private hintLevel = 0;
-  private radioLamp?: Phaser.GameObjects.Arc;
+  private pulsesSinceHint = 0;
 
   constructor(scene: Phaser.Scene, progress: RoomProgress, actions: RoomActions) {
     super(scene, progress, actions);
@@ -22,19 +20,12 @@ export default class MorseRadioRoomStrategy extends RoomStrategy {
     this.pressStartedAt = undefined;
     this.pulseDurations = [];
     this.attempts = 0;
-    this.elapsed = 0;
-    this.hintLevel = 0;
-
-    this.drawRadioAndBoat();
-    this.radioLamp = this.addRoomObject(
-      this.scene.add.circle(590, 315, 7, 0xffffff).setStrokeStyle(1, 0x777777),
-    );
-    this.showHint('El barco tiene problemas. La radio funciona. La tripulación, por ahora, no está aportando mucho.');
+    this.pulsesSinceHint = 0;
+    this.addRoomObject(this.scene.add.image(640, 350, 'ship').setDisplaySize(480, 320));
   }
 
   protected onShiftDown(_side: ShiftSide, event: KeyboardEvent): void {
     this.pressStartedAt = event.timeStamp;
-    this.radioLamp?.setFillStyle(0x111111);
   }
 
   protected override onShiftUp(_side: ShiftSide, event: KeyboardEvent): void {
@@ -42,8 +33,9 @@ export default class MorseRadioRoomStrategy extends RoomStrategy {
 
     const duration = Math.max(0, event.timeStamp - this.pressStartedAt);
     this.pressStartedAt = undefined;
-    this.radioLamp?.setFillStyle(0xffffff);
     this.pulseDurations.push(duration);
+    this.pulsesSinceHint += 1;
+    if (this.pulseDurations.length > PULSE_COUNT) this.pulseDurations.shift();
 
     if (this.pulseDurations.length < PULSE_COUNT) return;
 
@@ -52,68 +44,25 @@ export default class MorseRadioRoomStrategy extends RoomStrategy {
       return;
     }
 
-    this.resetSignal();
-    this.showAttemptHint();
-  }
-
-  override update(delta: number): void {
-    this.elapsed += delta;
-    if (this.hintLevel < 1 && this.elapsed >= 8000) {
-      this.hintLevel = 1;
-      this.showHint('No hace falta hablar el mismo idioma.');
-    } else if (this.hintLevel < 2 && this.elapsed >= 17000) {
-      this.hintLevel = 2;
-      this.showHint('Mandá una señal reconocible.');
-    } else if (this.hintLevel < 3 && this.elapsed >= 28000) {
-      this.hintLevel = 3;
-      this.showHint('Tres cortas, tres largas, tres cortas.');
+    if (this.pulsesSinceHint >= PULSE_COUNT) {
+      this.pulsesSinceHint = 0;
+      this.showAttemptHint();
     }
   }
 
   private showAttemptHint(): void {
     this.attempts += 1;
     if (this.attempts === 1) {
-      this.showHint('No hace falta hablar el mismo idioma.');
+      this.showHint('Nos estamos hundiendo. Necesitamos ayuda.');
     } else if (this.attempts === 2) {
-      this.showHint('Mandá una señal reconocible.');
+      this.showHint('¡Necesitamos ayudaaaaa!');
+    } else if (this.attempts === 3) {
+      this.showHint('La nave recibió nueve pulsos. No todos transmitieron lo mismo.');
+    } else if (this.attempts === 4) {
+      this.showHint('Quizás importe cuánto tiempo mantenés apretada la tecla.');
     } else {
-      this.showHint('Tres cortas, tres largas, tres cortas.');
+      this.showHint('Una señal se distingue por su ritmo, no solo por la cantidad de pulsos.');
     }
   }
 
-  private resetSignal(): void {
-    this.pulseDurations = [];
-    this.radioLamp?.setFillStyle(0xffffff);
-  }
-
-  private drawRadioAndBoat(): void {
-    const illustration = this.addRoomObject(this.scene.add.graphics());
-    illustration.lineStyle(3, 0x111111, 1);
-    illustration.strokeRoundedRect(500, 285, 185, 120, 10);
-    illustration.strokeRect(525, 310, 42, 38);
-    illustration.strokeCircle(628, 345, 24);
-    illustration.beginPath();
-    illustration.moveTo(546, 280);
-    illustration.lineTo(530, 240);
-    illustration.lineTo(552, 230);
-    illustration.strokePath();
-
-    illustration.beginPath();
-    illustration.moveTo(735, 393);
-    illustration.lineTo(895, 393);
-    illustration.lineTo(865, 430);
-    illustration.lineTo(760, 430);
-    illustration.closePath();
-    illustration.moveTo(810, 390);
-    illustration.lineTo(810, 330);
-    illustration.lineTo(855, 390);
-    illustration.strokePath();
-    illustration.lineStyle(1, 0xaaaaaa, 1);
-    illustration.beginPath();
-    illustration.moveTo(720, 450);
-    illustration.lineTo(905, 450);
-    illustration.moveTo(750, 461);
-    illustration.lineTo(880, 461);
-    illustration.strokePath();
-  }
 }

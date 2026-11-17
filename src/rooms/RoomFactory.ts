@@ -8,7 +8,7 @@ import FifthRoomStrategy from './strategies/FifthRoomStrategy';
 import SixthRoomStrategy from './strategies/SixthRoomStrategy';
 import SeventhRoomStrategy from './strategies/SeventhRoomStrategy';
 import ShiftTabRoomStrategy from './strategies/ShiftTabRoomStrategy';
-import HoldShiftRoomStrategy from './strategies/HoldShiftRoomStrategy';
+import TopDownMapRoomStrategy from './strategies/TopDownMapRoomStrategy';
 import ClickableShiftRoomStrategy from './strategies/ClickableShiftRoomStrategy';
 import ReleaseShiftRoomStrategy from './strategies/ReleaseShiftRoomStrategy';
 import MorseRadioRoomStrategy from './strategies/MorseRadioRoomStrategy';
@@ -46,7 +46,7 @@ export default class RoomFactory {
       case 9:
         return new AlternatingShiftRoomStrategy(scene, progress, actions);
       case 10:
-        return new HoldShiftRoomStrategy(scene, progress, actions);
+        return new TopDownMapRoomStrategy(scene, progress, actions);
       case 11:
         return new ClickableShiftRoomStrategy(scene, progress, actions);
       case 12:

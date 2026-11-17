@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect x="4" y="5" width="56" height="52" rx="9" fill="#fff" stroke="#111" stroke-width="3" />
+  <path d="M32 13 20 27h8v10h8V27h8L32 13Z" fill="#111" />
+  <text x="32" y="49" fill="#111" font-family="monospace" font-size="8" font-weight="600" text-anchor="middle">SHIFT</text>
+</svg>

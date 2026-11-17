@@ -5,6 +5,7 @@ export default class SixthRoomStrategy extends RoomStrategy {
   readonly prompt = '';
 
   private static readonly WAIT_DURATION_MS = 7000;
+  private static readonly INTERACTIONS_BEFORE_FIRST_HINT = 3;
 
   private idleTime = 0;
   private interactionCount = 0;
@@ -30,7 +31,6 @@ export default class SixthRoomStrategy extends RoomStrategy {
       this.scene.add.image(640, 350, 'clock').setDisplaySize(520, 520 * 2 / 3),
     );
 
-    this.showHint('Podés esperar. Es una actividad sorprendentemente difícil para alguien con tantas teclas.');
   }
 
   protected onShiftDown(_side: ShiftSide): void {
@@ -52,9 +52,15 @@ export default class SixthRoomStrategy extends RoomStrategy {
 
   private registerActivity(): void {
     this.idleTime = 0;
-    const lineIndex = Math.min(this.interactionCount, this.interactionLines.length - 1);
-    this.showHint(this.interactionLines[lineIndex] ?? 'Ahora sí: no toques nada.');
     this.interactionCount += 1;
+
+    if (this.interactionCount < SixthRoomStrategy.INTERACTIONS_BEFORE_FIRST_HINT) return;
+
+    const lineIndex = Math.min(
+      this.interactionCount - SixthRoomStrategy.INTERACTIONS_BEFORE_FIRST_HINT,
+      this.interactionLines.length - 1,
+    );
+    this.showHint(this.interactionLines[lineIndex] ?? 'Ahora sí: no toques nada.');
   }
 
 }

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import RoomFactory from '../rooms/RoomFactory';
 import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from '../rooms/strategies/RoomStrategy';
 import { MORSE_EASTER_EGG_EVENT } from '../input/ShiftMorseEasterEgg';
+import { shiftMorseEasterEgg } from '../input/ShiftMorseEasterEgg';
 
 interface GameSceneData {
   backdoorAttempt?: boolean;
@@ -48,6 +49,7 @@ export default class GameScene extends Phaser.Scene {
     this.showingPrototypeEnd = false;
     this.returningToStart = false;
     this.inControlRoom = false;
+    shiftMorseEasterEgg.setEnabled(false);
     this.physicallyHeldShifts.clear();
     this.suppressedShiftReleases.clear();
     this.dispatchedShiftPresses.clear();
@@ -104,9 +106,15 @@ export default class GameScene extends Phaser.Scene {
 
     this.roomCompleted = true;
     this.progress.completedRooms.add(this.currentRoomNumber);
-    this.roomAdvanceAvailableAt = Date.now() + GameScene.ROOM_ADVANCE_DELAY_MS;
+    const requiresBriefDelay = this.currentRoomNumber === 9 || this.currentRoomNumber === 13;
+    this.roomAdvanceAvailableAt = Date.now() + (requiresBriefDelay ? GameScene.ROOM_ADVANCE_DELAY_MS : 0);
     const completedRoomNumber = this.currentRoomNumber;
-    this.statusText.setText(`${closingText}\n\nESPERÁ UN MOMENTO…`);
+    this.statusText.setText(requiresBriefDelay
+      ? closingText
+      : `${closingText}\n\nPRESIONÁ SHIFT PARA CONTINUAR`);
+
+    if (!requiresBriefDelay) return;
+
     this.time.delayedCall(GameScene.ROOM_ADVANCE_DELAY_MS, () => {
       if (!this.roomCompleted || this.currentRoomNumber !== completedRoomNumber) return;
       this.statusText.setText(`${closingText}\n\nPRESIONÁ SHIFT PARA CONTINUAR`);
@@ -133,10 +141,12 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private createRoomLabel(): void {
-    this.roomLabel = this.addText(72, 56, '', {
-      color: '#777777',
-      fontSize: '16px',
-    }).setOrigin(0, 0.5);
+    this.roomLabel = this.addText(640, 56, '', {
+      color: '#555555',
+      fontFamily: 'IBM Plex Sans, Arial, sans-serif',
+      fontSize: '24px',
+      fontStyle: '300',
+    }).setOrigin(0.5, 0.5);
   }
 
   private createRoomPrompt(): void {
@@ -152,6 +162,12 @@ export default class GameScene extends Phaser.Scene {
       color: '#222222',
       fontSize: '19px',
       fontStyle: '500',
+      lineSpacing: 6,
+      align: 'center',
+      wordWrap: {
+        width: (1280 * 2) / 3,
+        useAdvancedWrap: true,
+      },
     }).setOrigin(0.5);
   }
 
@@ -199,9 +215,22 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
-    if (event.code === 'Tab' && (event.shiftKey || this.physicallyHeldShifts.size > 0)) {
-      event.preventDefault();
-      this.handleShiftTab();
+    if (event.code === 'Tab') {
+      const isShiftTab = event.shiftKey || this.physicallyHeldShifts.size > 0;
+      if (isShiftTab) {
+        event.preventDefault();
+        this.handleShiftTab();
+        return;
+      }
+
+      if (this.currentRoomNumber === 8) {
+        event.preventDefault();
+        if (!this.waitingForEntryShiftRelease && !this.roomCompleted && !this.showingPrototypeEnd) {
+          this.currentRoom?.handleKeyDown(event);
+        }
+        return;
+      }
+
       return;
     }
 
@@ -217,6 +246,7 @@ export default class GameScene extends Phaser.Scene {
     this.physicallyHeldShifts.add(side);
 
     if (this.waitingForEntryShiftRelease) return;
+    if (!this.showingPrototypeEnd) this.currentRoom?.handleShiftVisualDown(side);
 
     const timerId = window.setTimeout(
       () => this.dispatchPendingShiftPress(side),
@@ -235,6 +265,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     this.physicallyHeldShifts.delete(side);
+    this.currentRoom?.handleShiftVisualUp(side);
 
     if (this.suppressedShiftReleases.delete(side)) {
       this.waitingForEntryShiftRelease = false;
@@ -254,7 +285,8 @@ export default class GameScene extends Phaser.Scene {
     }
 
     if (!this.dispatchedShiftPresses.delete(side)) return;
-    if (this.roomCompleted || this.showingPrototypeEnd) return;
+    if (this.showingPrototypeEnd) return;
+    if (this.roomCompleted) return;
 
     this.currentRoom?.handleKeyUp(event);
   };
@@ -323,8 +355,9 @@ export default class GameScene extends Phaser.Scene {
     this.createRoom(this.currentRoomNumber - 1);
   }
 
-  private createRoom(roomNumber: number): void {
+  private createRoom(roomNumber: number, carryShiftIntoReleaseRoom = false): void {
     this.currentRoom?.exit();
+    shiftMorseEasterEgg.setEnabled(roomNumber === 0);
     const room = RoomFactory.create(roomNumber, this, this.progress, this.createRoomActions());
 
     if (!room) {
@@ -337,8 +370,11 @@ export default class GameScene extends Phaser.Scene {
     this.currentRoom = room;
     this.roomCompleted = false;
     this.inControlRoom = roomNumber === 0;
-    this.roomLabel.setText(roomNumber === 0 ? 'CONTROL' : `SALA ${String(roomNumber).padStart(2, '0')}`);
-    room.enter([...this.physicallyHeldShifts]);
+    this.roomLabel.setText(roomNumber === 0 ? 'CONTROL' : String(roomNumber).padStart(2, '0'));
+    const heldShiftsAtEntry = roomNumber === 12 && !carryShiftIntoReleaseRoom
+      ? []
+      : [...this.physicallyHeldShifts];
+    room.enter(heldShiftsAtEntry);
 
     if (this.inControlRoom) return;
 
@@ -367,8 +403,13 @@ export default class GameScene extends Phaser.Scene {
     }
 
     let nextRoom = this.currentRoomNumber + 1;
+    while (nextRoom < 8 && this.progress.completedRooms.has(nextRoom)) nextRoom += 1;
+    if (nextRoom === 8 && this.progress.roomNineReturnPending) {
+      this.createRoom(8);
+      return;
+    }
     while (this.progress.completedRooms.has(nextRoom)) nextRoom += 1;
-    this.createRoom(nextRoom);
+    this.createRoom(nextRoom, this.currentRoomNumber === 11 && nextRoom === 12);
   }
 
   private showPrototypeEnd(): void {
@@ -427,8 +468,8 @@ export default class GameScene extends Phaser.Scene {
   ): Phaser.GameObjects.Text {
     return this.add
       .text(x, y, text, {
-        ...style,
         fontFamily: 'IBM Plex Mono, Menlo, monospace',
+        ...style,
       })
       .setResolution(Math.min(window.devicePixelRatio || 1, 2));
   }

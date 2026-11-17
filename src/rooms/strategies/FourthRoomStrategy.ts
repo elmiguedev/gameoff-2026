@@ -12,13 +12,23 @@ export default class FourthRoomStrategy extends RoomStrategy {
 
   private readonly typedCharacters: TypedCharacter[] = [];
   private inputDisplay?: Phaser.GameObjects.Text;
+  private unrelatedAttempts = 0;
+  private hasShownConceptHint = false;
 
   constructor(scene: Phaser.Scene, progress: RoomProgress, actions: RoomActions) {
     super(scene, progress, actions);
   }
 
   protected override onEnter(): void {
-    this.addLabel(640, 165, 'CONTRASEÑA EXACTA', 16, '#666666');
+    this.typedCharacters.length = 0;
+    this.unrelatedAttempts = 0;
+    this.hasShownConceptHint = false;
+    this.addRoomObject(this.scene.add.text(640, 165, 'Contraseña?', {
+      color: '#666666',
+      fontFamily: 'IBM Plex Mono, Menlo, monospace',
+      fontSize: '16px',
+      fontStyle: '300',
+    }).setOrigin(0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)));
 
     this.inputDisplay = this.addRoomObject(
       this.scene.add.text(640, 295, '', {
@@ -69,37 +79,42 @@ export default class FourthRoomStrategy extends RoomStrategy {
     const everyLetterUsedShift = this.typedCharacters.length > 0
       && this.typedCharacters.every(({ shiftHeld }) => shiftHeld);
 
+    if (input === 'SHIFT' && everyLetterUsedShift && !usedCapsLock) {
+      this.complete('Bien. No todas las mayúsculas son iguales.');
+      return;
+    }
+
+    if (input.toLowerCase() === 'shift') {
+      if (usedCapsLock) {
+        this.showHint('La palabra es la correcta. Pero Caps Lock no hace el mismo trabajo que mantener apretada otra tecla.');
+        return;
+      }
+
+      this.showHint('La palabra parece correcta. Pero esas mayúsculas todavía no están del todo bien resueltas.');
+      return;
+    }
+
     if (usedCapsLock) {
       this.showHint('Veo que todavía no estamos entendiendo de qué va todo esto…');
       return;
     }
 
-    if (input === 'SHIFT' && everyLetterUsedShift) {
-      this.complete('Bien. No todas las mayúsculas son iguales.');
+    if (input.length === 0) {
+      this.showHint('Vacío. Técnicamente, una respuesta; no la que buscábamos.');
       return;
     }
 
-    this.showHint('No. La contraseña distingue mayúsculas y minúsculas.');
+    this.unrelatedAttempts += 1;
+    if (this.unrelatedAttempts > 4 && !this.hasShownConceptHint) {
+      this.hasShownConceptHint = true;
+      this.showHint('Quizá la clave tenga algo que ver con el concepto que sostiene todo este juego. No hace falta inventar una palabra nueva.');
+      return;
+    }
+
+    this.showHint('No. Esa palabra parece haber llegado a esta sala por accidente.');
   }
 
   private updateInputDisplay(): void {
     this.inputDisplay?.setText(this.typedCharacters.map(({ value }) => value).join(''));
-  }
-
-  private addLabel(
-    x: number,
-    y: number,
-    text: string,
-    fontSize: number,
-    color: string,
-  ): void {
-    this.addRoomObject(
-      this.scene.add.text(x, y, text, {
-        color,
-        fontFamily: 'IBM Plex Mono, Menlo, monospace',
-        fontSize: `${fontSize}px`,
-        fontStyle: '300',
-      }).setOrigin(0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)),
-    );
   }
 }

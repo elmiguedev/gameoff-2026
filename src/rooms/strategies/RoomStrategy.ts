@@ -63,6 +63,14 @@ export default abstract class RoomStrategy {
     this.onShiftDown(side, event);
   }
 
+  handleShiftVisualDown(side: ShiftSide): void {
+    this.onShiftVisualDown(side);
+  }
+
+  handleShiftVisualUp(side: ShiftSide): void {
+    this.onShiftVisualUp(side);
+  }
+
   handleKeyUp(event: KeyboardEvent): void {
     const side = RoomStrategy.getShiftSide(event.code);
     if (!side) {
@@ -108,6 +116,10 @@ export default abstract class RoomStrategy {
   protected onEnter(): void {}
 
   protected onShiftHeldAtEntry(_side: ShiftSide): void {}
+
+  protected onShiftVisualDown(_side: ShiftSide): void {}
+
+  protected onShiftVisualUp(_side: ShiftSide): void {}
 
   protected onShiftTab(): void {}
 

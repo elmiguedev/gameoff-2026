@@ -23,3 +23,23 @@ La sala del código numérico con salida simbólica (`1234` como pista para prod
 ## Música y atmósfera
 
 - Explorar una música profunda y misteriosa, con una sensación liminal e inquietante, en la línea de la atmósfera de *Severance*. Que acompañe los silencios y la tensión sin competir con los textos del Narrador ni dificultar su lectura.
+
+## Sala 10: ideas anteriores de mantener Shift
+
+Se exploró mantener Shift mientras se mueve una pieza con el mouse para sostener o trabar un mecanismo. Una variante era fijar un platillo de una balanza mientras se mueven pesos en el otro. Quedan como alternativas, no como el prototipo actual.
+
+## Sala 10: mapa desplazable — prototipo actual
+
+Vista top-down de una cuadrícula con un personaje cuadrado y árboles circulares. La casa queda fuera de la vista inicial. Las flechas mueven al personaje; Shift + flechas desplaza el mapa para encontrar la casa y luego llegar hasta ella. Prototipo simple para validar el concepto, sin ilustraciones complejas.
+
+## Shift+Enter: salto de línea
+
+Explorar la diferencia entre Enter (confirmar) y Shift+Enter (insertar un salto de línea). El reto sería descubrir que el mensaje solo se entiende cuando se divide en líneas.
+
+## Sala: maniobra de acoplamiento espacial
+
+Inspirada en la maniobra de acoplamiento de *Interstellar*: Shift hace girar la nave y las flechas corrigen su trayectoria para interceptar el objetivo. Explorar la coordinación entre rotación y desplazamiento como acertijo de teclado.
+
+## Final alternativo: mensajes que cambian al volver
+
+Explorar un final alternativo donde los textos y mensajes de las salas cambian cada vez que el jugador entra o sale de ellas. El recorrido de vuelta podría revelar nuevas reacciones del Narrador y hacer que el mismo espacio se sienta distinto.
