@@ -16,7 +16,7 @@ export default class ReleaseShiftRoomStrategy extends RoomStrategy {
   protected override onEnter(): void {
     this.shiftsHeldAtEntry.clear();
     this.failedPressAttempts = 0;
-    this.addRoomObject(this.scene.add.text(640, 235, 'SOLTAR. SOLO SOLTAR.', {
+    this.addRoomObject(this.scene.add.text(640, 235, 'Soltar, solo soltar', {
       color: '#111111',
       fontFamily: 'IBM Plex Mono, Menlo, monospace',
       fontSize: '24px',

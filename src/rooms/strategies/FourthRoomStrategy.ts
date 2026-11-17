@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
+import { playSound } from '../../audio/AudioControls';
 
 interface TypedCharacter {
   value: string;
@@ -53,6 +54,7 @@ export default class FourthRoomStrategy extends RoomStrategy {
     if (event.repeat) return;
 
     if (event.code === 'Backspace') {
+      if (this.typedCharacters.length > 0) playSound(this.scene, 'input');
       this.typedCharacters.pop();
       this.updateInputDisplay();
       return;
@@ -65,6 +67,7 @@ export default class FourthRoomStrategy extends RoomStrategy {
 
     if (!/^[a-z]$/i.test(event.key)) return;
 
+    playSound(this.scene, 'input');
     this.typedCharacters.push({
       value: event.key,
       capsLockActive: event.getModifierState('CapsLock'),

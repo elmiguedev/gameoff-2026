@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
+import { playSound } from '../../audio/AudioControls';
 
 const CELL_SIZE = 48;
 const VIEW_COLUMNS = 9;
@@ -138,6 +139,7 @@ export default class TopDownMapRoomStrategy extends RoomStrategy {
     this.playerX = nextX;
     this.playerY = nextY;
     this.updatePlayerPosition();
+    playSound(this.scene, 'guy');
 
     if (this.playerX === HOUSE.x && this.playerY === HOUSE.y) {
       this.complete('Llegaste. La casa estaba en el mapa. Solo faltaba encontrarla.');

@@ -21,7 +21,7 @@ export default class SecondRoomStrategy extends RoomStrategy {
       return;
     }
 
-    this.complete('Eso. Dos Shifts. Una puerta. Y ahora sí, un mínimo de aprendizaje.');
+    this.complete('La puerta cedió. No te acostumbres: no suele pasar cuando hacés lo mismo dos veces.');
   }
 
   protected override onShiftVisualDown(side: ShiftSide): void {

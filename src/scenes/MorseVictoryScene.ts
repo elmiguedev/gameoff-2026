@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { addAudioToggle, bindMouseClickSound } from '../audio/AudioControls';
 
 export default class MorseVictoryScene extends Phaser.Scene {
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
@@ -12,6 +13,8 @@ export default class MorseVictoryScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor('#ffffff');
+    addAudioToggle(this);
+    bindMouseClickSound(this);
     this.registry.set('shift-backdoor-visit-pending', false);
 
     this.add.text(640, 270, 'SEÑAL RECIBIDA', {

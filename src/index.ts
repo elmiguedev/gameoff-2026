@@ -9,7 +9,7 @@ window.addEventListener('keydown', shiftMorseEasterEgg.handleKeyDown, true);
 window.addEventListener('keyup', shiftMorseEasterEgg.handleKeyUp, true);
 window.addEventListener('blur', shiftMorseEasterEgg.resetOnBlur);
 
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
   width: 1280,
@@ -25,3 +25,17 @@ new Phaser.Game({
   },
   scene: [BootloaderScene, StartScene, GameScene, MorseVictoryScene],
 });
+
+window.addEventListener('keydown', (event) => {
+  if ((event.code !== 'ShiftLeft' && event.code !== 'ShiftRight') || event.repeat) return;
+  if (!game.cache.audio.exists('shift-key')) return;
+
+  game.sound.play('shift-key');
+}, true);
+
+window.addEventListener('keydown', (event) => {
+  if ((event.code !== 'Enter' && event.code !== 'NumpadEnter') || event.repeat) return;
+  if (!game.cache.audio.exists('enter')) return;
+
+  game.sound.play('enter');
+}, true);

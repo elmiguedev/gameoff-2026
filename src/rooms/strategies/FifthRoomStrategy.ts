@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
+import { playSound } from '../../audio/AudioControls';
 
 const CODE_SYMBOLS: Record<string, string> = {
   Digit1: '!',
@@ -40,6 +41,7 @@ export default class FifthRoomStrategy extends RoomStrategy {
     if (event.repeat) return;
 
     if (event.code === 'Backspace') {
+      if (this.input.length > 0) playSound(this.scene, 'input');
       this.input = this.input.slice(0, -1);
       this.updateInputDisplay();
       return;
@@ -55,6 +57,7 @@ export default class FifthRoomStrategy extends RoomStrategy {
     const character = event.shiftKey ? CODE_SYMBOLS[event.code] : event.code.slice(-1);
     if (!character) return;
 
+    playSound(this.scene, 'input');
     this.input += character;
     this.updateInputDisplay();
   }

@@ -9,6 +9,8 @@ export default class MorseRadioRoomStrategy extends RoomStrategy {
 
   private pressStartedAt?: number;
   private pulseDurations: number[] = [];
+  private pulseGapsAfter: number[] = [];
+  private lastPulseReleasedAt?: number;
   private attempts = 0;
   private pulsesSinceHint = 0;
 
@@ -19,12 +21,18 @@ export default class MorseRadioRoomStrategy extends RoomStrategy {
   protected override onEnter(): void {
     this.pressStartedAt = undefined;
     this.pulseDurations = [];
+    this.pulseGapsAfter = [];
+    this.lastPulseReleasedAt = undefined;
     this.attempts = 0;
     this.pulsesSinceHint = 0;
     this.addRoomObject(this.scene.add.image(640, 350, 'ship').setDisplaySize(480, 320));
   }
 
   protected onShiftDown(_side: ShiftSide, event: KeyboardEvent): void {
+    if (this.pulseDurations.length > 0 && this.lastPulseReleasedAt !== undefined) {
+      const lastIndex = this.pulseGapsAfter.length - 1;
+      this.pulseGapsAfter[lastIndex] = Math.max(0, event.timeStamp - this.lastPulseReleasedAt);
+    }
     this.pressStartedAt = event.timeStamp;
   }
 
@@ -34,12 +42,17 @@ export default class MorseRadioRoomStrategy extends RoomStrategy {
     const duration = Math.max(0, event.timeStamp - this.pressStartedAt);
     this.pressStartedAt = undefined;
     this.pulseDurations.push(duration);
+    this.pulseGapsAfter.push(0);
+    this.lastPulseReleasedAt = event.timeStamp;
     this.pulsesSinceHint += 1;
-    if (this.pulseDurations.length > PULSE_COUNT) this.pulseDurations.shift();
+    if (this.pulseDurations.length > PULSE_COUNT) {
+      this.pulseDurations.shift();
+      this.pulseGapsAfter.shift();
+    }
 
     if (this.pulseDurations.length < PULSE_COUNT) return;
 
-    if (isRescueMorseSignal(this.pulseDurations)) {
+    if (isRescueMorseSignal(this.pulseDurations, this.pulseGapsAfter)) {
       this.complete('Recibido. El barco está a salvo. La tripulación sigue sin aportar mucho.');
       return;
     }
@@ -59,7 +72,7 @@ export default class MorseRadioRoomStrategy extends RoomStrategy {
     } else if (this.attempts === 3) {
       this.showHint('La nave recibió nueve pulsos. No todos transmitieron lo mismo.');
     } else if (this.attempts === 4) {
-      this.showHint('Quizás importe cuánto tiempo mantenés apretada la tecla.');
+      this.showHint('Podés mantener Shift para una raya o soltarlo y dejar una pausa más larga.');
     } else {
       this.showHint('Una señal se distingue por su ritmo, no solo por la cantidad de pulsos.');
     }

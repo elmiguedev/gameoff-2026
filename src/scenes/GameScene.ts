@@ -3,6 +3,7 @@ import RoomFactory from '../rooms/RoomFactory';
 import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from '../rooms/strategies/RoomStrategy';
 import { MORSE_EASTER_EGG_EVENT } from '../input/ShiftMorseEasterEgg';
 import { shiftMorseEasterEgg } from '../input/ShiftMorseEasterEgg';
+import { addAudioToggle, bindMouseClickSound, playSound } from '../audio/AudioControls';
 
 interface GameSceneData {
   backdoorAttempt?: boolean;
@@ -68,6 +69,8 @@ export default class GameScene extends Phaser.Scene {
     this.createStatusText();
     this.createRoomSelector();
     this.createKeyboardInput();
+    addAudioToggle(this);
+    bindMouseClickSound(this);
     window.removeEventListener(MORSE_EASTER_EGG_EVENT, this.handleMorseVictory);
     window.addEventListener(MORSE_EASTER_EGG_EVENT, this.handleMorseVictory);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanupMorseListener, this);
@@ -104,6 +107,7 @@ export default class GameScene extends Phaser.Scene {
   public completeRoom(closingText: string): void {
     if (this.roomCompleted) return;
 
+    playSound(this, 'confirm');
     this.roomCompleted = true;
     this.progress.completedRooms.add(this.currentRoomNumber);
     const requiresBriefDelay = this.currentRoomNumber === 9 || this.currentRoomNumber === 13;
@@ -122,6 +126,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   public finishGame(closingText: string): void {
+    playSound(this, 'confirm');
     this.currentRoom?.exit();
     this.currentRoom = undefined;
     this.inControlRoom = false;

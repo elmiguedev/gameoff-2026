@@ -1,14 +1,23 @@
 import Phaser from 'phaser';
 import { MORSE_EASTER_EGG_EVENT } from '../input/ShiftMorseEasterEgg';
+import { addAudioToggle, bindMouseClickSound } from '../audio/AudioControls';
 
 export default class StartScene extends Phaser.Scene {
   private static readonly START_DELAY_MS = 180;
+  private static readonly IDLE_HINT_DELAY_MS = 5000;
 
   private readonly heldShifts = new Set<string>();
   private startTimer?: number;
+  private idleHintTimer?: number;
   private transitionStarted = false;
+  private idleHintText?: Phaser.GameObjects.Text;
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
+    if (this.transitionStarted) return;
+    this.resetIdleHintTimer();
+
+    if (event.repeat) return;
+
     if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
       if (this.startTimer !== undefined) {
         window.clearTimeout(this.startTimer);
@@ -50,9 +59,11 @@ export default class StartScene extends Phaser.Scene {
     this.input.keyboard?.off('keydown', this.handleKeyDown);
     this.input.keyboard?.off('keyup', this.handleKeyUp);
     this.cameras.main.setBackgroundColor('#ffffff');
+    addAudioToggle(this);
+    bindMouseClickSound(this);
 
     this.add
-      .text(640, 300, 'SHIFT', {
+      .text(640, 360, 'SHIFT', {
         color: '#111111',
         fontFamily: 'IBM Plex Mono, Menlo, monospace',
         fontSize: '72px',
@@ -61,11 +72,14 @@ export default class StartScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setResolution(Math.min(window.devicePixelRatio || 1, 2));
 
-    this.add
-      .text(640, 410, 'PRESIONÁ SHIFT PARA EMPEZAR', {
+    this.idleHintText = this.add
+      .text(640, 620, '', {
         color: '#555555',
         fontFamily: 'IBM Plex Mono, Menlo, monospace',
-        fontSize: '18px',
+        fontSize: '19px',
+        lineSpacing: 6,
+        align: 'center',
+        wordWrap: { width: (1280 * 2) / 3, useAdvancedWrap: true },
       })
       .setOrigin(0.5)
       .setResolution(Math.min(window.devicePixelRatio || 1, 2));
@@ -74,6 +88,7 @@ export default class StartScene extends Phaser.Scene {
     this.input.keyboard?.on('keyup', this.handleKeyUp);
     window.addEventListener(MORSE_EASTER_EGG_EVENT, this.handleMorseVictory);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanupInput, this);
+    this.resetIdleHintTimer();
   }
 
   private startGame(backdoorAttempt: boolean, secretVictory = false): void {
@@ -102,8 +117,24 @@ export default class StartScene extends Phaser.Scene {
   }
 
   private cleanupInput(): void {
+    if (this.idleHintTimer !== undefined) {
+      window.clearTimeout(this.idleHintTimer);
+      this.idleHintTimer = undefined;
+    }
     this.input.keyboard?.off('keydown', this.handleKeyDown);
     this.input.keyboard?.off('keyup', this.handleKeyUp);
     window.removeEventListener(MORSE_EASTER_EGG_EVENT, this.handleMorseVictory);
   }
+
+  private resetIdleHintTimer(): void {
+    if (this.idleHintTimer !== undefined) window.clearTimeout(this.idleHintTimer);
+    this.idleHintText?.setText('');
+
+    this.idleHintTimer = window.setTimeout(() => {
+      this.idleHintTimer = undefined;
+      if (this.transitionStarted || this.heldShifts.size > 0) return;
+      this.idleHintText?.setText('¿Esperabas que empezara solo? Presioná Shift y hacemos como que fue tu idea.');
+    }, StartScene.IDLE_HINT_DELAY_MS);
+  }
+
 }

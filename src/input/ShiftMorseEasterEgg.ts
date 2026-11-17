@@ -9,12 +9,19 @@ function average(values: number[]): number {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-export function isRescueMorseSignal(durations: number[]): boolean {
+export function isRescueMorseSignal(durations: number[], gapsAfter: number[] = []): boolean {
   if (durations.length !== REQUIRED_PULSES || durations.some((duration) => !Number.isFinite(duration) || duration <= 0)) {
     return false;
   }
 
-  const groups = [durations.slice(0, 3), durations.slice(3, 6), durations.slice(6, 9)];
+  const interpretedDurations = durations.map((duration, index) => (
+    index >= 3 && index <= 5 ? Math.max(duration, gapsAfter[index] ?? 0) : duration
+  ));
+  const groups = [
+    interpretedDurations.slice(0, 3),
+    interpretedDurations.slice(3, 6),
+    interpretedDurations.slice(6, 9),
+  ];
   const groupAverages = groups.map(average);
   const [firstShort, long, lastShort] = groupAverages;
   if (firstShort === undefined || long === undefined || lastShort === undefined) return false;
@@ -50,6 +57,8 @@ export default class ShiftMorseEasterEgg {
   private enabled = false;
   private activePulse?: ActivePulse;
   private pulseDurations: number[] = [];
+  private pulseGapsAfter: number[] = [];
+  private lastPulseReleasedAt?: number;
 
   setEnabled(enabled: boolean): void {
     if (this.enabled === enabled) return;
@@ -66,6 +75,11 @@ export default class ShiftMorseEasterEgg {
       if (this.activePulse) {
         this.reset();
         return;
+      }
+
+      if (this.pulseDurations.length > 0 && this.lastPulseReleasedAt !== undefined) {
+        const lastIndex = this.pulseGapsAfter.length - 1;
+        this.pulseGapsAfter[lastIndex] = Math.max(0, event.timeStamp - this.lastPulseReleasedAt);
       }
 
       this.activePulse = {
@@ -98,16 +112,19 @@ export default class ShiftMorseEasterEgg {
     }
 
     this.pulseDurations.push(Math.max(0, event.timeStamp - pulse.startedAt));
+    this.pulseGapsAfter.push(0);
+    this.lastPulseReleasedAt = event.timeStamp;
 
     if (this.pulseDurations.length < REQUIRED_PULSES) return;
 
-    if (isRescueMorseSignal(this.pulseDurations)) {
+    if (isRescueMorseSignal(this.pulseDurations, this.pulseGapsAfter)) {
       this.reset();
       queueMicrotask(() => window.dispatchEvent(new Event(MORSE_EASTER_EGG_EVENT)));
       return;
     }
 
     this.pulseDurations.shift();
+    this.pulseGapsAfter.shift();
   };
 
   readonly resetOnBlur = (): void => {
@@ -117,6 +134,8 @@ export default class ShiftMorseEasterEgg {
   private reset(): void {
     this.activePulse = undefined;
     this.pulseDurations = [];
+    this.pulseGapsAfter = [];
+    this.lastPulseReleasedAt = undefined;
   }
 }
 
