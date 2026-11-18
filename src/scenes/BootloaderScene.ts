@@ -3,6 +3,16 @@ import Phaser from 'phaser';
 export default class BootloaderScene extends Phaser.Scene {
   private static backgroundMusic?: Phaser.Sound.BaseSound;
 
+  static stopBackgroundMusic(): void {
+    BootloaderScene.backgroundMusic?.stop();
+  }
+
+  static resumeBackgroundMusic(): void {
+    if (BootloaderScene.backgroundMusic && !BootloaderScene.backgroundMusic.isPlaying) {
+      BootloaderScene.backgroundMusic.play();
+    }
+  }
+
   constructor() {
     super('BootloaderScene');
   }

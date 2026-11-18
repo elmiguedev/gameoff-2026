@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MORSE_EASTER_EGG_EVENT } from '../input/ShiftMorseEasterEgg';
 import { addAudioToggle, bindMouseClickSound } from '../audio/AudioControls';
+import BootloaderScene from './BootloaderScene';
 
 export default class StartScene extends Phaser.Scene {
   private static readonly START_DELAY_MS = 180;
@@ -59,6 +60,7 @@ export default class StartScene extends Phaser.Scene {
     this.input.keyboard?.off('keydown', this.handleKeyDown);
     this.input.keyboard?.off('keyup', this.handleKeyUp);
     this.cameras.main.setBackgroundColor('#ffffff');
+    BootloaderScene.resumeBackgroundMusic();
     addAudioToggle(this);
     bindMouseClickSound(this);
 
@@ -85,9 +87,13 @@ export default class StartScene extends Phaser.Scene {
       .setResolution(Math.min(window.devicePixelRatio || 1, 2));
 
     const narratorRestartTease = this.registry.get('narrator-restart-tease-pending') === true;
+    const operatorNewSession = this.registry.get('operator-new-session-pending') === true;
     if (narratorRestartTease) {
       this.registry.set('narrator-restart-tease-pending', false);
       this.idleHintText.setText('Ja. Volviste. No encontraste la opción secreta. Era bastante sencilla. Ahora vas a tener que resolver las catorce salas de nuevo. Desde cero.');
+    } else if (operatorNewSession) {
+      this.registry.set('operator-new-session-pending', false);
+      this.idleHintText.setText('NUEVA SESIÓN INICIADA.');
     }
 
     this.input.keyboard?.on('keydown', this.handleKeyDown);

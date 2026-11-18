@@ -5,6 +5,8 @@ import { MORSE_EASTER_EGG_EVENT } from '../input/ShiftMorseEasterEgg';
 import { shiftMorseEasterEgg } from '../input/ShiftMorseEasterEgg';
 import { addAudioToggle, bindMouseClickSound, playSound } from '../audio/AudioControls';
 import { getRoomNarration } from '../content/roomNarration';
+import { createControlMonitor } from '../rooms/ControlMonitor';
+import BootloaderScene from './BootloaderScene';
 
 interface GameSceneData {
   backdoorAttempt?: boolean;
@@ -35,6 +37,7 @@ export default class GameScene extends Phaser.Scene {
   private narrationPhase: 'normal' | 'replay' = 'normal';
   private roomNarrationIndex = 0;
   private inControlRoom = false;
+  private endingTransitionInProgress = false;
   private waitingForEntryShiftRelease = true;
   private roomAdvanceAvailableAt = 0;
 
@@ -56,6 +59,7 @@ export default class GameScene extends Phaser.Scene {
     this.narrationPhase = this.registry.get('narrator-replay-active') === true ? 'replay' : 'normal';
     this.roomNarrationIndex = 0;
     this.inControlRoom = false;
+    this.endingTransitionInProgress = false;
     shiftMorseEasterEgg.setEnabled(false);
     this.physicallyHeldShifts.clear();
     this.suppressedShiftReleases.clear();
@@ -138,15 +142,38 @@ export default class GameScene extends Phaser.Scene {
   }
 
   public finishGame(closingText: string): void {
-    playSound(this, 'confirm');
     this.currentRoom?.exit();
     this.currentRoom = undefined;
     this.inControlRoom = false;
     this.returningToStart = false;
     this.showingPrototypeEnd = true;
-    this.roomLabel.setText('');
-    this.roomPrompt.setText('SHIFT');
-    this.statusText.setText(`${closingText}\n\nPRESIONÁ SHIFT PARA VOLVER AL INICIO`);
+    this.endingTransitionInProgress = true;
+    BootloaderScene.stopBackgroundMusic();
+    this.playDisconnectTone();
+
+    this.children.list.forEach((child) => {
+      (child as Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Visible).setVisible(false);
+    });
+    const monitor = createControlMonitor(this).setDepth(2000);
+    const disconnectedLabel = this.addText(640, 340, closingText, {
+      color: '#f2f2f2',
+      fontSize: '26px',
+      align: 'center',
+    }).setOrigin(0.5).setDepth(2001);
+
+    this.time.delayedCall(3000, () => {
+      disconnectedLabel.destroy();
+      playSound(this, 'enter');
+      this.time.delayedCall(2000, () => {
+        this.cameras.main.setBackgroundColor('#ffffff');
+        monitor.destroy();
+        playSound(this, 'enter');
+        this.time.delayedCall(2000, () => {
+          this.registry.set('operator-new-session-pending', true);
+          this.scene.start('StartScene');
+        });
+      });
+    });
   }
 
   public returnToStart(): void {
@@ -322,7 +349,7 @@ export default class GameScene extends Phaser.Scene {
     this.dispatchedShiftPresses.add(side);
 
     if (this.showingPrototypeEnd) {
-      this.scene.start('StartScene');
+      if (!this.endingTransitionInProgress) this.scene.start('StartScene');
       return;
     }
 
@@ -398,6 +425,8 @@ export default class GameScene extends Phaser.Scene {
     this.roomCompleted = false;
     this.inControlRoom = roomNumber === 0;
     this.roomLabel.setText(roomNumber === 0 ? 'CONTROL' : String(roomNumber).padStart(2, '0'));
+    this.roomLabel.setVisible(roomNumber !== 0);
+    this.statusText.setY(roomNumber === 0 ? 640 : 620);
     const heldShiftsAtEntry = roomNumber === 12 && !carryShiftIntoReleaseRoom
       ? []
       : [...this.physicallyHeldShifts];
@@ -504,6 +533,27 @@ export default class GameScene extends Phaser.Scene {
 
   private cleanupMorseListener(): void {
     window.removeEventListener(MORSE_EASTER_EGG_EVENT, this.handleMorseVictory);
+  }
+
+  private playDisconnectTone(): void {
+    if (!(this.sound instanceof Phaser.Sound.WebAudioSoundManager) || this.sound.mute) return;
+
+    const { context, masterMuteNode } = this.sound;
+    const now = context.currentTime;
+    const gain = context.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.045, now + 0.12);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
+    gain.connect(masterMuteNode);
+
+    for (const frequency of [48, 50.2]) {
+      const oscillator = context.createOscillator();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(frequency, now);
+      oscillator.connect(gain);
+      oscillator.start(now);
+      oscillator.stop(now + 1.85);
+    }
   }
 
   private addText(

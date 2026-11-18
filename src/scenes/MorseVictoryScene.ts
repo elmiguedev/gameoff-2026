@@ -29,8 +29,8 @@ export default class MorseVictoryScene extends Phaser.Scene {
     }).setOrigin(0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2));
 
     this.add.text(640, 365, wonByHacking
-      ? 'El Narrador perdió el control. Encontraste la salida.'
-      : 'El barco está a salvo. El Narrador no sabe quién contestó.', {
+      ? 'El Operador perdió el control. Encontraste la salida.'
+      : 'El barco está a salvo. El Operador no sabe quién contestó.', {
       color: '#555555',
       fontFamily: 'IBM Plex Mono, Menlo, monospace',
       fontSize: '17px',

@@ -1,10 +1,11 @@
 import type Phaser from 'phaser';
 import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
+import { createControlMonitor } from '../ControlMonitor';
 
 const OPTIONS = [
   'REVISAR ÍNDICE DE SALAS',
   'VOLVER A LA PUERTA',
-  'CERRAR SESIÓN DEL NARRADOR',
+  'CERRAR SESIÓN DEL OPERADOR',
 ];
 
 const ROOM_INDEX = [
@@ -23,6 +24,7 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
   private focusIndex = 0;
   private exitOptionRevealed = false;
   private restartConfirmationPending = false;
+  private finishConfirmationPending = false;
   private roomIndexOpen = false;
   private optionLabels: Phaser.GameObjects.Text[] = [];
   private panelLabel?: Phaser.GameObjects.Text;
@@ -36,6 +38,7 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
     this.focusIndex = 0;
     this.exitOptionRevealed = false;
     this.restartConfirmationPending = false;
+    this.finishConfirmationPending = false;
     this.roomIndexOpen = false;
     this.optionLabels = [];
 
@@ -44,32 +47,22 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
       return;
     }
 
-    const monitor = this.addRoomObject(this.scene.add.graphics());
-    monitor.lineStyle(3, 0x111111, 1);
-    monitor.strokeRect(350, 145, 580, 340);
-    monitor.beginPath();
-    monitor.moveTo(590, 485);
-    monitor.lineTo(590, 520);
-    monitor.lineTo(690, 520);
-    monitor.lineTo(690, 485);
-    monitor.moveTo(550, 521);
-    monitor.lineTo(730, 521);
-    monitor.strokePath();
+    this.drawMonitor();
 
-    this.addLabel(640, 185, 'NARRADOR: ACTIVO', 20, '#111111');
-    this.panelLabel = this.addLabel(430, 250, 'PANEL DE CONTROL', 13, '#777777', 0);
-    this.indexList = this.addRoomObject(this.scene.add.text(420, 360, ROOM_INDEX, {
-      color: '#333333',
+    this.addLabel(640, 205, 'OPERADOR: ACTIVO', 28, '#f5f5f5');
+    this.panelLabel = this.addLabel(250, 285, 'PANEL DE CONTROL', 20, '#b8b8b8', 0);
+    this.indexList = this.addRoomObject(this.scene.add.text(280, 410, ROOM_INDEX, {
+      color: '#d0d0d0',
       fontFamily: 'IBM Plex Mono, Menlo, monospace',
-      fontSize: '14px',
-      lineSpacing: 8,
+      fontSize: '16px',
+      lineSpacing: 10,
     }).setOrigin(0, 0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)).setVisible(false));
 
     OPTIONS.forEach((option, index) => {
-      const label = this.addRoomObject(this.scene.add.text(430, 335 + index * 58, '', {
-        color: '#111111',
+      const label = this.addRoomObject(this.scene.add.text(280, 375 + index * 54, '', {
+        color: '#f5f5f5',
         fontFamily: 'IBM Plex Mono, Menlo, monospace',
-        fontSize: '16px',
+        fontSize: '22px',
       }).setOrigin(0, 0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)));
 
       this.optionLabels.push(label);
@@ -94,6 +87,18 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
   protected override onKeyDown(event: KeyboardEvent): void {
     if (this.progress.backdoorAttempt) {
       if (event.code === 'Escape') this.returnToStart();
+      return;
+    }
+
+    if (this.finishConfirmationPending) {
+      if (event.code === 'Enter' || event.code === 'NumpadEnter') {
+        if (event.repeat) return;
+        this.finishConfirmationPending = false;
+        this.finishGame('OPERADOR: DESCONECTADO');
+      } else if (event.code === 'Escape') {
+        this.finishConfirmationPending = false;
+        this.showHint('Está bien. La sesión sigue abierta.');
+      }
       return;
     }
 
@@ -144,8 +149,8 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
     if (event.repeat) return;
 
     if (this.focusIndex === 2) {
-      const closingText = '...Y sí, todo es con Shift acá. Hasta para cerrar sesión. No sé por qué me sorprende.';
-      this.finishGame(closingText);
+      this.finishConfirmationPending = true;
+      this.showHint('No hace falta cerrar la sesión. Podés volver a la puerta.\nPero ya decidiste, ¿no?\n\nENTER confirma. ESC cancela.');
       return;
     }
 
@@ -166,7 +171,7 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
     this.optionLabels.forEach((label, index) => {
       const isHiddenCloseOption = index === 2 && !this.exitOptionRevealed;
       label.setText(isHiddenCloseOption ? '' : `${index === this.focusIndex ? '›' : ' '}  ${OPTIONS[index]}`);
-      label.setColor(index === this.focusIndex ? '#111111' : '#777777');
+      label.setColor(index === this.focusIndex ? '#ffffff' : '#a0a0a0');
       label.setVisible(!this.roomIndexOpen);
     });
     this.panelLabel?.setText(this.roomIndexOpen ? 'ÍNDICE DE SALAS' : 'PANEL DE CONTROL');
@@ -174,21 +179,11 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
   }
 
   private showLockedBackdoor(): void {
-    const monitor = this.addRoomObject(this.scene.add.graphics());
-    monitor.lineStyle(3, 0x111111, 1);
-    monitor.strokeRect(350, 145, 580, 340);
-    monitor.beginPath();
-    monitor.moveTo(590, 485);
-    monitor.lineTo(590, 520);
-    monitor.lineTo(690, 520);
-    monitor.lineTo(690, 485);
-    monitor.moveTo(550, 521);
-    monitor.lineTo(730, 521);
-    monitor.strokePath();
+    this.drawMonitor();
 
     const visits = this.progress.unauthorizedControlRoomVisits ?? 1;
-    this.addLabel(640, 215, 'NARRADOR: ACTIVO', 20, '#111111');
-    this.addLabel(640, 330, 'PERMISOS INSUFICIENTES', 15, '#555555');
+    this.addLabel(640, 205, 'OPERADOR: ACTIVO', 28, '#f5f5f5');
+    this.addLabel(640, 340, 'PERMISOS INSUFICIENTES', 20, '#d0d0d0');
 
     if (visits === 3) {
       this.showHint('No tenés permisos para estar acá. Aunque… S.O.S. no es el único código Morse que sirve en este lugar. ESC para salir.');
@@ -205,6 +200,10 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
     }
 
     this.showHint('No tenés permisos para estar acá. Espero que no vuelvas a molestarme otra vez. ESC para salir.');
+  }
+
+  private drawMonitor(): void {
+    this.addRoomObject(createControlMonitor(this.scene));
   }
 
   private addLabel(
