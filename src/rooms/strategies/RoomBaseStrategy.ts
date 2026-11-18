@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { TranslationKey } from '../../i18n/i18n';
 
 export type ShiftSide = 'left' | 'right';
 
@@ -14,14 +15,14 @@ export interface RoomProgress {
 export interface RoomActions {
   setRoomPrompt(text: string): void;
   clearRoomStatus(): void;
-  showHint(text: string): void;
-  completeRoom(closingText: string): void;
-  finishGame(closingText: string): void;
+  showHint(text: TranslationKey): void;
+  completeRoom(closingText: TranslationKey): void;
+  finishGame(closingText: TranslationKey): void;
   returnToStart(): void;
 }
 
 /** Shared room behavior; concrete strategies only implement their puzzle rules. */
-export default abstract class RoomStrategy {
+export default abstract class RoomBaseStrategy {
   private readonly heldShifts = new Set<ShiftSide>();
   private readonly roomContainer: Phaser.GameObjects.Container;
 
@@ -63,7 +64,7 @@ export default abstract class RoomStrategy {
   }
 
   handleKeyDown(event: KeyboardEvent): void {
-    const side = RoomStrategy.getShiftSide(event.code);
+    const side = RoomBaseStrategy.getShiftSide(event.code);
     if (!side) {
       this.onKeyDown(event);
       return;
@@ -84,7 +85,7 @@ export default abstract class RoomStrategy {
   }
 
   handleKeyUp(event: KeyboardEvent): void {
-    const side = RoomStrategy.getShiftSide(event.code);
+    const side = RoomBaseStrategy.getShiftSide(event.code);
     if (!side) {
       this.onKeyUp(event);
       return;
@@ -104,15 +105,15 @@ export default abstract class RoomStrategy {
     return side ? this.heldShifts.has(side) : this.heldShifts.size > 0;
   }
 
-  protected showHint(text: string): void {
+  protected showHint(text: TranslationKey): void {
     this.actions.showHint(text);
   }
 
-  protected complete(closingText: string): void {
+  protected complete(closingText: TranslationKey): void {
     this.actions.completeRoom(closingText);
   }
 
-  protected finishGame(closingText: string): void {
+  protected finishGame(closingText: TranslationKey): void {
     this.actions.finishGame(closingText);
   }
 

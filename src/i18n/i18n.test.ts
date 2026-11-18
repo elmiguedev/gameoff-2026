@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test';
-import { detectBrowserLanguage, translate } from './i18n';
+import englishCatalog from './en.json';
+import spanishCatalog from './es.json';
+import { detectBrowserLanguage, t } from './i18n';
 
 describe('language selection', () => {
   test('uses Spanish when the browser language is Spanish', () => {
@@ -11,8 +13,9 @@ describe('language selection', () => {
     expect(detectBrowserLanguage(['fr-FR'])).toBe('en');
   });
 
-  test('translates Operator interface copy while preserving Spanish copy', () => {
-    expect(translate('OPERADOR: ACTIVO', 'en')).toBe('OPERATOR: ACTIVE');
-    expect(translate('OPERADOR: ACTIVO', 'es')).toBe('OPERADOR: ACTIVO');
+  test('keeps language catalogs in sync and translates by key', () => {
+    expect(Object.keys(englishCatalog).sort()).toEqual(Object.keys(spanishCatalog).sort());
+    expect(t('copy.operador-activo', 'en')).toBe('OPERATOR: ACTIVE');
+    expect(t('copy.operador-activo', 'es')).toBe('OPERADOR: ACTIVO');
   });
 });

@@ -1,104 +1,105 @@
-export type NarrationPhase = 'normal' | 'return' | 'replay' | 'second-return';
+import type { TranslationKey } from '../i18n/i18n';
 
-type RoomNarration = Partial<Record<number, readonly string[]>>;
+export type NarrationPhase = 'normal' | 'return' | 'replay' | 'second-return';
+type RoomNarration = Partial<Record<number, readonly TranslationKey[]>>;
 
 /** Narrative copy by run phase, kept separate from puzzle rules for easier translation. */
 export const ROOM_NARRATION: Record<NarrationPhase, RoomNarration> = {
   normal: {
-    14: ['Llegaste al final. Felicitaciones. Ahora podemos quedarnos acá para siempre.'],
+    14: ['copy.llegaste-al-final-felicitaciones-ahora-podemos-quedarn'],
   },
   return: {
-    13: ['Todo salió bien. El barco está a salvo. Perfecto. Volvamos al recorrido, por favor.'],
-    12: ['Otra vez esta tecla. Sí, ya la soltaste. Lo registré. Ahora sigamos hacia adelante.'],
-    11: ['¿Otra vez para atrás? El botón ya hizo su parte. Volvamos, por favor.'],
-    10: ['No. No sigas retrocediendo. Seguí hacia adelante. Es la dirección en la que estábamos yendo.'],
-    9: ['¿Otra vez Shift+Tab? No hace falta. Seguí hacia adelante, por favor.'],
-    8: ['Shift+Tab. Otra vez. Ya vi que sabés apretarlo. Ahora dejá de hacerlo y seguí.'],
-    7: ['Shift+Tab, Shift+Tab. ¿Es lo único que sabés hacer? Porque está empezando a parecerlo.'],
-    6: ['Shift+Tab, Shift+Tab. Es lo único que sabés hacer. Basta. Volvé hacia adelante.'],
-    5: ['¡Shift+Tab! Dejá de volver. Te lo estoy diciendo en serio.'],
-    4: ['No me estás escuchando. Dejá de retroceder. Ahora.'],
-    3: ['¿Qué querés encontrar? No hay nada. No hay nada. Volvé.'],
-    2: ['¡Pará! No sigas. Por favor, seguí hacia adelante.'],
-    1: ['No, no, no. Llegaste al principio. Ya está. No hay nada antes. Dejá de apretar Shift+Tab. Por favor.'],
+    13: ['copy.todo-salio-bien-el-barco-esta-a-salvo-perfecto-volvamo'],
+    12: ['copy.otra-vez-esta-tecla-si-ya-la-soltaste-lo-registre-ahor'],
+    11: ['copy.otra-vez-para-atras-el-boton-ya-hizo-su-parte-volvamos'],
+    10: ['copy.no-no-sigas-retrocediendo-segui-hacia-adelante-es-la-d'],
+    9: ['copy.otra-vez-shift-tab-no-hace-falta-segui-hacia-adelante'],
+    8: ['copy.shift-tab-otra-vez-ya-vi-que-sabes-apretarlo-ahora-dej'],
+    7: ['copy.shift-tab-shift-tab-es-lo-unico-que-sabes-hacer-porque'],
+    6: ['copy.shift-tab-shift-tab-es-lo-unico-que-sabes-hacer-basta'],
+    5: ['copy.shift-tab-deja-de-volver-te-lo-estoy-diciendo-en-serio'],
+    4: ['copy.no-me-estas-escuchando-deja-de-retroceder-ahora'],
+    3: ['copy.que-queres-encontrar-no-hay-nada-no-hay-nada-volve'],
+    2: ['copy.para-no-sigas-por-favor-segui-hacia-adelante'],
+    1: ['copy.no-no-no-llegaste-al-principio-ya-esta-no-hay-nada-ant'],
   },
   replay: {
-    0: ['Ah, volviste. Esta vez mirá bien las opciones. No es que la salida fuera difícil de encontrar.'],
+    0: ['copy.ah-volviste-esta-vez-mira-bien-las-opciones-no-es-que'],
     1: [
-      'Primera sala. Otra vez. Apretá Shift; al menos esa parte ya la habías descubierto.',
-      'Bien, avanzaste. Una sala menos para repetir. Quedan trece. No hace falta que cuente, pero lo voy a hacer.',
+      'copy.primera-sala-otra-vez-apreta-shift-al-menos-esa-parte',
+      'copy.bien-avanzaste-una-sala-menos-para-repetir-quedan-trec',
     ],
     2: [
-      'Dos Shifts, de nuevo. Ya sabés que no alcanza con apretar el mismo. Qué alivio tener que explicarlo otra vez.',
-      'El otro Shift. Sí, el otro. Esta vez vas más rápido. Casi parece que aprendiste algo.',
+      'copy.dos-shifts-de-nuevo-ya-sabes-que-no-alcanza-con-apreta',
+      'copy.el-otro-shift-si-el-otro-esta-vez-vas-mas-rapido-casi',
     ],
     3: [
-      'Un Shift dibujado. La última vez también era un dibujo. Veamos cuánto tardás en distinguirlo de una tecla.',
-      '¡Bien! Apretaste Shift de nuevo. Espero que no me haya confundido otra vez.',
+      'copy.un-shift-dibujado-la-ultima-vez-tambien-era-un-dibujo',
+      'copy.bien-apretaste-shift-de-nuevo-espero-que-no-me-haya-co',
     ],
     4: [
-      'La contraseña sigue siendo SHIFT, escrita con Shift. Caps Lock no se volvió una solución por insistencia.',
-      'Exacto, mantener Shift mientras escribís. Ya conocías el truco. La sorpresa sería que lo olvidaras.',
+      'copy.la-contrasena-sigue-siendo-shift-escrita-con-shift-cap',
+      'copy.exacto-mantener-shift-mientras-escribis-ya-conocias-el',
     ],
     5: [
-      'La cerradura muestra 134. Ya sabés que con Shift las teclas producen otra cosa. Esta vez, intentá recordarlo.',
-      '¡Abrió! No hace falta que parezcas sorprendido; ya habías estado acá.',
+      'copy.la-cerradura-muestra-134-ya-sabes-que-con-shift-las-te',
+      'copy.abrio-no-hace-falta-que-parezcas-sorprendido-ya-habias',
     ],
     6: [
-      'Hay que esperar. No toques nada. Sí, otra vez. A ver si esta vez una instrucción tan sencilla dura siete segundos.',
-      'Lo lograste: esperaste. Récord personal, supongo.',
+      'copy.hay-que-esperar-no-toques-nada-si-otra-vez-a-ver-si-es',
+      'copy.lo-lograste-esperaste-record-personal-supongo',
     ],
     7: [
-      'Seleccioná todos los cuadrados usando Shift para conservar lo que ya marcaste. Ya lo hiciste. No debería ser noticia.',
-      'Todos seleccionados. Excelente. La memoria muscular sobrevivió al reinicio.',
+      'copy.selecciona-todos-los-cuadrados-usando-shift-para-conse',
+      'copy.todos-seleccionados-excelente-la-memoria-muscular-sobr',
     ],
     8: [
-      'Esta sala vuelve a pedir Shift+Tab. Curioso que una combinación te sirva acá y no te haya servido para encontrar la opción secreta.',
-      'Volviste. Por lo menos esta vez sabías qué combinación probar.',
+      'copy.esta-sala-vuelve-a-pedir-shift-tab-curioso-que-una-com',
+      'copy.volviste-por-lo-menos-esta-vez-sabias-que-combinacion',
     ],
     9: [
-      'Alterná entre Shift izquierdo y derecho. Sí, los dos. La coordinación no se vuelve opcional en una segunda vuelta.',
-      'Los dos Shifts, alternados. Una vez más, exactamente como antes.',
+      'copy.alterna-entre-shift-izquierdo-y-derecho-si-los-dos-la',
+      'copy.los-dos-shifts-alternados-una-vez-mas-exactamente-como',
     ],
     10: [
-      'Movete con las flechas y usá Shift con las flechas para desplazar el mapa. La casa no se va a encontrar sola esta vez tampoco.',
-      'La casa está ahí. Ya sabés cómo llegar; sería raro que el bosque te ganara dos veces.',
+      'copy.movete-con-las-flechas-y-usa-shift-con-las-flechas-par',
+      'copy.la-casa-esta-ahi-ya-sabes-como-llegar-seria-raro-que-e',
     ],
     11: [
-      'Es un botón dibujado. Se activa con el mouse, no con Shift. Una distinción que ya tuviste oportunidad de aprender.',
-      'Un clic. Eso era todo. No te preocupes, no voy a fingir que fue difícil.',
+      'copy.es-un-boton-dibujado-se-activa-con-el-mouse-no-con-shi',
+      'copy.un-clic-eso-era-todo-no-te-preocupes-no-voy-a-fingir-q',
     ],
     12: [
-      'La sala necesita que entres con Shift apretado y después lo sueltes. La segunda parte suele ser la más complicada.',
-      'Lo soltaste. Bien. Ahora intentá no reiniciar el recorrido para encontrar la salida.',
+      'copy.la-sala-necesita-que-entres-con-shift-apretado-y-despu',
+      'copy.lo-soltaste-bien-ahora-intenta-no-reiniciar-el-recorri',
     ],
     13: [
-      'SOS: tres puntos, tres rayas, tres puntos. Podés mantener Shift o marcar las rayas con pausas más largas. Ya lo resolviste una vez.',
-      'La señal llegó. Qué bueno que al menos una cosa de esta partida te resultó familiar.',
+      'copy.sos-tres-puntos-tres-rayas-tres-puntos-podes-mantener',
+      'copy.la-senal-llego-que-bueno-que-al-menos-una-cosa-de-esta',
     ],
     14: [
-      'De nuevo en el final. La opción secreta sigue estando en control. Esta vez podrías mirar un poco mejor.',
-      'Sigue sin pasar nada. No hace falta probar Shift otra vez. Espero que no se te ocurra volver; sería muy poco original.',
+      'copy.de-nuevo-en-el-final-la-opcion-secreta-sigue-estando-e',
+      'copy.sigue-sin-pasar-nada-no-hace-falta-probar-shift-otra-v',
     ],
   },
   'second-return': {
     0: [
-      'Ah, otra vez acá. Todo el recorrido de nuevo y todavía no encontraste la opción secreta. Podemos repetirlo; a mí me viene perfecto.',
-      '...Y sí, todo es con Shift acá. Hasta para encontrar esta opción. Te tomó otra vuelta completa, pero llegaste.',
+      'copy.ah-otra-vez-aca-todo-el-recorrido-de-nuevo-y-todavia-n',
+      'copy.y-si-todo-es-con-shift-aca-hasta-para-encontrar-esta-o-2',
     ],
-    13: ['Otra vez el barco. Ya lo salvaste después de resolver las catorce salas de nuevo. Y aun así no encontraste la opción secreta.'],
-    12: ['Otra vez soltando Shift. Después de todo ese recorrido, volvés a empezar el retroceso. La opción secreta sigue siendo sencilla.'],
-    11: ['Otra vez el clic. Qué dedicación para repetirlo todo y terminar exactamente en el mismo lugar.'],
-    10: ['Ya conocés este camino. Lo recorriste entero hace un momento. Y ahora volvés, sabiendo cómo termina.'],
-    9: ['Los dos Shifts otra vez. Todo otra vez. La opción secreta, en cambio, sigue sin aparecerte.'],
-    8: ['Otra vez Shift+Tab. Al menos esta combinación sí la encontraste. Qué pena que no fuera la otra.'],
-    7: ['Los cuadrados de nuevo. Después de repetir catorce salas, volver a empezar ya parece una costumbre.'],
-    6: ['Esperaste siete segundos para volver a recorrer todo. No hace falta que me expliques el plan; ya lo estoy disfrutando.'],
-    5: ['La cerradura otra vez. Si seguís el ciclo, vas a volver acá. Y después a control. Y después… bueno, ya sabés.'],
-    4: ['Escribí SHIFT de nuevo. Ojalá la opción secreta fuera igual de fácil de leer. Ah, cierto: lo es.'],
-    3: ['El dibujo otra vez. Todo el recorrido otra vez. Y la salida secreta todavía sin encontrar.'],
-    2: ['La puerta se abre, vos volvés, y yo no tengo que hacer nada. Es un sistema bastante eficiente.'],
-    1: ['Y de nuevo al comienzo. Repetiste todo el juego para volver acá sin encontrar la salida. ¿Seguimos? Yo puedo hacer esto para siempre.'],
+    13: ['copy.otra-vez-el-barco-ya-lo-salvaste-despues-de-resolver-l'],
+    12: ['copy.otra-vez-soltando-shift-despues-de-todo-ese-recorrido'],
+    11: ['copy.otra-vez-el-clic-que-dedicacion-para-repetirlo-todo-y'],
+    10: ['copy.ya-conoces-este-camino-lo-recorriste-entero-hace-un-mo'],
+    9: ['copy.los-dos-shifts-otra-vez-todo-otra-vez-la-opcion-secret'],
+    8: ['copy.otra-vez-shift-tab-al-menos-esta-combinacion-si-la-enc'],
+    7: ['copy.los-cuadrados-de-nuevo-despues-de-repetir-catorce-sala'],
+    6: ['copy.esperaste-siete-segundos-para-volver-a-recorrer-todo-n'],
+    5: ['copy.la-cerradura-otra-vez-si-seguis-el-ciclo-vas-a-volver'],
+    4: ['copy.escribi-shift-de-nuevo-ojala-la-opcion-secreta-fuera-i'],
+    3: ['copy.el-dibujo-otra-vez-todo-el-recorrido-otra-vez-y-la-sal'],
+    2: ['copy.la-puerta-se-abre-vos-volves-y-yo-no-tengo-que-hacer-n'],
+    1: ['copy.y-de-nuevo-al-comienzo-repetiste-todo-el-juego-para-vo'],
   },
 };
 
@@ -106,7 +107,7 @@ export function getRoomNarration(
   phase: NarrationPhase,
   roomNumber: number,
   lineIndex = 0,
-): string | undefined {
+): TranslationKey | undefined {
   const lines = ROOM_NARRATION[phase][roomNumber];
   if (!lines?.length) return undefined;
   return lines[Math.min(lineIndex, lines.length - 1)];

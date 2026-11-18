@@ -1,9 +1,9 @@
 import type Phaser from 'phaser';
-import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
+import RoomBaseStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomBaseStrategy';
 import ShiftEntity from '../../entities/ShiftEntity';
-import { translate } from '../../i18n/i18n';
+import TypographyEntity from '../../entities/TypographyEntity';
 
-export default class ReleaseShiftRoomStrategy extends RoomStrategy {
+export default class Room12Strategy extends RoomBaseStrategy {
   readonly prompt = '';
 
   private shiftKey?: ShiftEntity;
@@ -17,13 +17,9 @@ export default class ReleaseShiftRoomStrategy extends RoomStrategy {
   protected override onEnter(): void {
     this.shiftsHeldAtEntry.clear();
     this.failedPressAttempts = 0;
-    this.addRoomObject(this.scene.add.text(640, 235, translate('Soltar, solo soltar'), {
-      color: '#111111',
-      fontFamily: 'IBM Plex Mono, Menlo, monospace',
-      fontSize: '24px',
-    }).setOrigin(0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)));
+    this.addRoomObject(new TypographyEntity(this.scene, 640, 235, 'copy.soltar-solo-soltar', 'room-instruction'));
     this.shiftKey = this.addRoomObject(new ShiftEntity(this.scene, 640, 390, 520, 520 / 3));
-    this.showHint('Esta sala no vio el principio de la acción.');
+    this.showHint('copy.esta-sala-no-vio-el-principio-de-la-accion');
   }
 
   protected override onShiftHeldAtEntry(side: ShiftSide): void {
@@ -46,13 +42,13 @@ export default class ReleaseShiftRoomStrategy extends RoomStrategy {
   protected override onShiftUp(side: ShiftSide): void {
     if (!this.shiftsHeldAtEntry.delete(side)) {
       if (this.failedPressAttempts >= 3) {
-        this.showHint('Te dije que soltaras. No que presionaras y soltaras. Hay una diferencia, aunque sea sutil.');
+        this.showHint('copy.te-dije-que-soltaras-no-que-presionaras-y-soltaras-hay');
       } else {
-        this.showHint('La tecla se liberó. Pero esta sala no vio cuándo empezó todo.');
+        this.showHint('copy.la-tecla-se-libero-pero-esta-sala-no-vio-cuando-empezo');
       }
       return;
     }
 
-    this.complete('Ahí está. Esta vez entraste con algo todavía apretado.');
+    this.complete('copy.ahi-esta-esta-vez-entraste-con-algo-todavia-apretado');
   }
 }

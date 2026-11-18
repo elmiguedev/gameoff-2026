@@ -1,13 +1,16 @@
 import Phaser from 'phaser';
 import RoomFactory from '../rooms/RoomFactory';
-import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from '../rooms/strategies/RoomStrategy';
-import { MORSE_EASTER_EGG_EVENT } from '../input/ShiftMorseEasterEgg';
-import { shiftMorseEasterEgg } from '../input/ShiftMorseEasterEgg';
-import { addAudioToggle, bindMouseClickSound, playSound } from '../audio/AudioControls';
+import RoomBaseStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from '../rooms/strategies/RoomBaseStrategy';
+import { MORSE_SIGNAL_EVENT } from '../input/MorseInputComponent';
+import { morseInput } from '../input/MorseInputComponent';
+import { AudioManager } from '../audio/AudioManager';
+import AudioToggleEntity from '../entities/AudioToggleEntity';
+import ControlMonitorEntity from '../entities/ControlMonitorEntity';
+import OperatorPanelEntity from '../entities/OperatorPanelEntity';
+import TypographyEntity from '../entities/TypographyEntity';
 import { getRoomNarration } from '../content/roomNarration';
-import { createControlMonitor } from '../rooms/ControlMonitor';
 import BootloaderScene from './BootloaderScene';
-import { translate } from '../i18n/i18n';
+import { t, type TranslationKey } from '../i18n/i18n';
 
 interface GameSceneData {
   backdoorAttempt?: boolean;
@@ -31,7 +34,7 @@ export default class GameScene extends Phaser.Scene {
   private readonly pendingShiftPresses = new Map<ShiftSide, PendingShiftPress>();
 
   private currentRoomNumber = 0;
-  private currentRoom?: RoomStrategy;
+  private currentRoom?: RoomBaseStrategy;
   private roomCompleted = false;
   private showingPrototypeEnd = false;
   private returningToStart = false;
@@ -42,9 +45,9 @@ export default class GameScene extends Phaser.Scene {
   private waitingForEntryShiftRelease = true;
   private roomAdvanceAvailableAt = 0;
 
-  private roomLabel!: Phaser.GameObjects.Text;
-  private roomPrompt!: Phaser.GameObjects.Text;
-  private statusText!: Phaser.GameObjects.Text;
+  private roomLabel!: TypographyEntity;
+  private roomPrompt!: TypographyEntity;
+  private operatorPanel!: OperatorPanelEntity;
   private roomSelectorButtons: Phaser.GameObjects.Rectangle[] = [];
 
   constructor() {
@@ -52,6 +55,14 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create(data: GameSceneData = {}): void {
+    this.resetRunState(data);
+    this.prepareMorse();
+    this.createSceneObjects();
+    this.bindSceneEvents();
+    this.enterRequestedRoom(data);
+  }
+
+  private resetRunState(data: GameSceneData): void {
     this.currentRoom = undefined;
     this.currentRoomNumber = 0;
     this.roomCompleted = false;
@@ -61,7 +72,6 @@ export default class GameScene extends Phaser.Scene {
     this.roomNarrationIndex = 0;
     this.inControlRoom = false;
     this.endingTransitionInProgress = false;
-    shiftMorseEasterEgg.setEnabled(false);
     this.physicallyHeldShifts.clear();
     this.suppressedShiftReleases.clear();
     this.dispatchedShiftPresses.clear();
@@ -74,6 +84,13 @@ export default class GameScene extends Phaser.Scene {
     this.progress.enteredControlRoomEarly = data.enteredControlRoomEarly ?? false;
     this.waitingForEntryShiftRelease = !data.entryShiftAlreadyReleased;
     this.roomAdvanceAvailableAt = 0;
+  }
+
+  private prepareMorse(): void {
+    morseInput.setEnabled(false);
+  }
+
+  private createSceneObjects(): void {
     this.createBackground();
     this.createRoomLabel();
     this.createRoomPrompt();
@@ -82,12 +99,16 @@ export default class GameScene extends Phaser.Scene {
       this.createRoomSelector();
     }
     this.createKeyboardInput();
-    addAudioToggle(this);
-    bindMouseClickSound(this);
-    window.removeEventListener(MORSE_EASTER_EGG_EVENT, this.handleMorseVictory);
-    window.addEventListener(MORSE_EASTER_EGG_EVENT, this.handleMorseVictory);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanupMorseListener, this);
+    this.createAudioControls();
+  }
 
+  private bindSceneEvents(): void {
+    window.removeEventListener(MORSE_SIGNAL_EVENT, this.handleMorseVictory);
+    window.addEventListener(MORSE_SIGNAL_EVENT, this.handleMorseVictory);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanupMorseListener, this);
+  }
+
+  private enterRequestedRoom(data: GameSceneData): void {
     if (data.backdoorAttempt) {
       this.progress.enteredControlRoomEarly = true;
       this.progress.backdoorAttempt = true;
@@ -96,43 +117,48 @@ export default class GameScene extends Phaser.Scene {
       this.progress.unauthorizedControlRoomVisits = unauthorizedVisits;
       this.registry.set('shift-backdoor-visit-pending', true);
       this.createRoom(0);
-    } else {
-      this.progress.enteredControlRoomEarly = data.enteredControlRoomEarly ?? false;
-      this.progress.unauthorizedControlRoomVisits = Number(this.registry.get('shift-control-unauthorized-visits') ?? 0);
-      this.createInitialRoom();
+      return;
     }
+
+    this.progress.enteredControlRoomEarly = data.enteredControlRoomEarly ?? false;
+    this.progress.unauthorizedControlRoomVisits = Number(this.registry.get('shift-control-unauthorized-visits') ?? 0);
+    this.createInitialRoom();
   }
 
   override update(_time: number, delta: number): void {
+    this.updateCurrentRoom(delta);
+  }
+
+  private updateCurrentRoom(delta: number): void {
     if (!this.roomCompleted && !this.showingPrototypeEnd) {
       this.currentRoom?.update(delta);
     }
   }
 
   public setRoomPrompt(text: string): void {
-    this.roomPrompt.setText(translate(text));
+    this.roomPrompt.setText(text);
   }
 
   public clearRoomStatus(): void {
-    this.statusText.setText('');
+    this.operatorPanel.showText('');
   }
 
-  public showHint(text: string): void {
-    this.statusText.setText(translate(text));
+  public showHint(text: TranslationKey): void {
+    this.operatorPanel.showMessage(text);
   }
 
-  public completeRoom(closingText: string): void {
+  public completeRoom(closingText: TranslationKey): void {
     if (this.roomCompleted) return;
 
-    playSound(this, 'confirm');
+    AudioManager.play(this, 'confirm');
     this.roomCompleted = true;
     this.progress.completedRooms.add(this.currentRoomNumber);
     const requiresBriefDelay = this.currentRoomNumber === 9 || this.currentRoomNumber === 13;
     this.roomAdvanceAvailableAt = Date.now() + (requiresBriefDelay ? GameScene.ROOM_ADVANCE_DELAY_MS : 0);
     const completedRoomNumber = this.currentRoomNumber;
-    const localizedClosingText = translate(closingText);
-    const continuePrompt = translate('PRESIONÁ SHIFT PARA CONTINUAR');
-    this.statusText.setText(requiresBriefDelay
+    const localizedClosingText = t(closingText);
+    const continuePrompt = t('copy.presiona-shift-para-continuar');
+    this.operatorPanel.showText(requiresBriefDelay
       ? localizedClosingText
       : `${localizedClosingText}\n\n${continuePrompt}`);
 
@@ -140,11 +166,11 @@ export default class GameScene extends Phaser.Scene {
 
     this.time.delayedCall(GameScene.ROOM_ADVANCE_DELAY_MS, () => {
       if (!this.roomCompleted || this.currentRoomNumber !== completedRoomNumber) return;
-      this.statusText.setText(`${localizedClosingText}\n\n${continuePrompt}`);
+      this.operatorPanel.showText(`${localizedClosingText}\n\n${continuePrompt}`);
     });
   }
 
-  public finishGame(closingText: string): void {
+  public finishGame(closingText: TranslationKey): void {
     this.currentRoom?.exit();
     this.currentRoom = undefined;
     this.inControlRoom = false;
@@ -157,20 +183,22 @@ export default class GameScene extends Phaser.Scene {
     this.children.list.forEach((child) => {
       (child as Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Visible).setVisible(false);
     });
-    const monitor = createControlMonitor(this).setDepth(2000);
-    const disconnectedLabel = this.addText(640, 340, translate(closingText), {
-      color: '#f2f2f2',
-      fontSize: '26px',
-      align: 'center',
-    }).setOrigin(0.5).setDepth(2001);
+    const monitor = new ControlMonitorEntity(this).setDepth(2000);
+    const disconnectedLabel = new TypographyEntity(
+      this,
+      640,
+      340,
+      closingText,
+      'ending-disconnect',
+    ).setDepth(2001);
 
     this.time.delayedCall(3000, () => {
       disconnectedLabel.destroy();
-      playSound(this, 'enter');
+      AudioManager.play(this, 'enter');
       this.time.delayedCall(2000, () => {
         this.cameras.main.setBackgroundColor('#ffffff');
         monitor.destroy();
-        playSound(this, 'enter');
+        AudioManager.play(this, 'enter');
         this.time.delayedCall(2000, () => {
           this.registry.set('operator-new-session-pending', true);
           this.scene.start('StartScene');
@@ -188,42 +216,25 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private createRoomLabel(): void {
-    this.roomLabel = this.addText(640, 56, '', {
-      color: '#555555',
-      fontFamily: 'IBM Plex Sans, Arial, sans-serif',
-      fontSize: '24px',
-      fontStyle: '300',
-    }).setOrigin(0.5, 0.5);
+    this.roomLabel = new TypographyEntity(this, 640, 56, '', 'room-number');
   }
 
   private createRoomPrompt(): void {
-    this.roomPrompt = this.addText(640, 350, '', {
-      color: '#111111',
-      fontSize: '56px',
-      fontStyle: '500',
-    }).setOrigin(0.5);
+    this.roomPrompt = new TypographyEntity(this, 640, 350, '', 'room-prompt');
   }
 
   private createStatusText(): void {
-    this.statusText = this.addText(640, 620, '', {
-      color: '#222222',
-      fontSize: '19px',
-      fontStyle: '500',
-      lineSpacing: 6,
-      align: 'center',
-      wordWrap: {
-        width: (1280 * 2) / 3,
-        useAdvancedWrap: true,
-      },
-    }).setOrigin(0.5);
+    this.operatorPanel = new OperatorPanelEntity(this);
+  }
+
+  private createAudioControls(): void {
+    AudioManager.attach(this);
+    new AudioToggleEntity(this);
   }
 
   private createRoomSelector(): void {
     this.roomSelectorButtons = [];
-    this.addText(1080, 26, translate('DEV · SALAS'), {
-      color: '#888888',
-      fontSize: '12px',
-    }).setOrigin(0, 0.5);
+    new TypographyEntity(this, 1080, 26, 'copy.dev-salas', 'dev-label').setOrigin(0, 0.5);
 
     for (let roomNumber = 0; roomNumber <= RoomFactory.roomCount; roomNumber += 1) {
       const column = roomNumber % 3;
@@ -240,10 +251,13 @@ export default class GameScene extends Phaser.Scene {
       button.on('pointerover', () => button.setFillStyle(0xf2f2f2));
       button.on('pointerout', () => button.setFillStyle(0xffffff));
 
-      this.addText(x, y, roomNumber === 0 ? 'CTRL' : String(roomNumber).padStart(2, '0'), {
-        color: '#333333',
-        fontSize: roomNumber === 0 ? '9px' : '12px',
-      }).setOrigin(0.5);
+      new TypographyEntity(
+        this,
+        x,
+        y,
+        roomNumber === 0 ? 'CTRL' : String(roomNumber).padStart(2, '0'),
+        roomNumber === 0 ? 'control-selector' : 'room-selector',
+      );
     }
   }
 
@@ -283,7 +297,7 @@ export default class GameScene extends Phaser.Scene {
       return;
     }
 
-    const side = RoomStrategy.getShiftSide(event.code);
+    const side = RoomBaseStrategy.getShiftSide(event.code);
     if (!side) {
       if (this.waitingForEntryShiftRelease || this.roomCompleted || this.showingPrototypeEnd) return;
       this.currentRoom?.handleKeyDown(event);
@@ -305,7 +319,7 @@ export default class GameScene extends Phaser.Scene {
   };
 
   private readonly handleKeyUp = (event: KeyboardEvent): void => {
-    const side = RoomStrategy.getShiftSide(event.code);
+    const side = RoomBaseStrategy.getShiftSide(event.code);
     if (!side) {
       if (!this.waitingForEntryShiftRelease && !this.roomCompleted && !this.showingPrototypeEnd) {
         this.currentRoom?.handleKeyUp(event);
@@ -359,7 +373,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.roomCompleted) {
       if (Date.now() < this.roomAdvanceAvailableAt) return;
       if (this.returningToStart && !this.inControlRoom) {
-        this.showHint('Eso. Sigamos hacia adelante. No hay ningún motivo para volver sobre tus pasos.');
+        this.showHint('copy.eso-sigamos-hacia-adelante-no-hay-ningun-motivo-para-v');
         return;
       }
       this.advanceRoom();
@@ -404,7 +418,7 @@ export default class GameScene extends Phaser.Scene {
     this.currentRoom?.handleShiftTab();
 
     if (this.currentRoomNumber <= 1) {
-      this.showHint('No hay una sala anterior. Todavía.');
+      this.showHint('copy.no-hay-una-sala-anterior-todavia');
       return;
     }
 
@@ -414,7 +428,7 @@ export default class GameScene extends Phaser.Scene {
   private createRoom(roomNumber: number, carryShiftIntoReleaseRoom = false): void {
     this.currentRoom?.exit();
     this.roomNarrationIndex = 0;
-    shiftMorseEasterEgg.setEnabled(roomNumber === 0);
+    morseInput.setEnabled(roomNumber === 0);
     const room = RoomFactory.create(roomNumber, this, this.progress, this.createRoomActions(roomNumber));
 
     if (!room) {
@@ -427,9 +441,9 @@ export default class GameScene extends Phaser.Scene {
     this.currentRoom = room;
     this.roomCompleted = false;
     this.inControlRoom = roomNumber === 0;
-    this.roomLabel.setText(roomNumber === 0 ? 'CONTROL' : String(roomNumber).padStart(2, '0'));
+    this.roomLabel.setText(roomNumber === 0 ? t('copy.control') : String(roomNumber).padStart(2, '0'));
     this.roomLabel.setVisible(roomNumber !== 0);
-    this.statusText.setY(roomNumber === 0 ? 640 : 620);
+    this.operatorPanel.setY(roomNumber === 0 ? 640 : 620);
     const heldShiftsAtEntry = roomNumber === 12 && !carryShiftIntoReleaseRoom
       ? []
       : [...this.physicallyHeldShifts];
@@ -450,7 +464,7 @@ export default class GameScene extends Phaser.Scene {
       room.disableInteractions();
       this.roomCompleted = true;
       const returnPhase = this.narrationPhase === 'replay' ? 'second-return' : 'return';
-      this.showHint(getRoomNarration(returnPhase, roomNumber) ?? 'No hace falta seguir retrocediendo.');
+      this.showHint(getRoomNarration(returnPhase, roomNumber) ?? 'copy.no-hace-falta-seguir-retrocediendo');
       return;
     }
 
@@ -460,7 +474,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     if (this.progress.completedRooms.has(roomNumber)) {
-      this.completeRoom('Esta ya la conocés. No hace falta volver a resolverla.');
+      this.completeRoom('copy.esta-ya-la-conoces-no-hace-falta-volver-a-resolverla');
     }
   }
 
@@ -485,8 +499,8 @@ export default class GameScene extends Phaser.Scene {
     this.showingPrototypeEnd = true;
     this.currentRoom = undefined;
     this.roomLabel.setText('SHIFT');
-    this.roomPrompt.setText(translate('FIN DEL PROTOTIPO'));
-    this.statusText.setText(translate('PRESIONÁ SHIFT PARA VOLVER AL INICIO'));
+    this.roomPrompt.setMessage('copy.fin-del-prototipo');
+    this.operatorPanel.showMessage('copy.presiona-shift-para-volver-al-inicio');
   }
 
   private createRoomActions(roomNumber: number): RoomActions {
@@ -500,13 +514,13 @@ export default class GameScene extends Phaser.Scene {
     };
   }
 
-  private getRoomCopy(roomNumber: number, fallback: string): string {
+  private getRoomCopy(roomNumber: number, fallback: TranslationKey): TranslationKey {
     if (this.narrationPhase !== 'replay') return fallback;
     const phase = this.returningToStart ? 'second-return' : 'replay';
     // Keep control-room phase narration out of ordinary menu navigation. Its second
     // line is reserved for the exact Shift+ArrowDown action that reveals the option.
     if (roomNumber === 0) {
-      if (!fallback.startsWith('...Y sí, todo es con Shift acá.')) return fallback;
+      if (fallback !== 'copy.y-si-todo-es-con-shift-aca-hasta-para-encontrar-esta-o') return fallback;
       return this.getNextRoomNarration(0, phase) ?? fallback;
     }
     return this.getNextRoomNarration(roomNumber, phase) ?? fallback;
@@ -515,7 +529,7 @@ export default class GameScene extends Phaser.Scene {
   private getNextRoomNarration(
     roomNumber: number,
     phase: 'replay' | 'second-return' = 'replay',
-  ): string | undefined {
+  ): TranslationKey | undefined {
     const narration = getRoomNarration(phase, roomNumber, this.roomNarrationIndex);
     if (narration) this.roomNarrationIndex += 1;
     return narration;
@@ -535,7 +549,7 @@ export default class GameScene extends Phaser.Scene {
   };
 
   private cleanupMorseListener(): void {
-    window.removeEventListener(MORSE_EASTER_EGG_EVENT, this.handleMorseVictory);
+    window.removeEventListener(MORSE_SIGNAL_EVENT, this.handleMorseVictory);
   }
 
   private playDisconnectTone(): void {
@@ -559,17 +573,4 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
-  private addText(
-    x: number,
-    y: number,
-    text: string,
-    style: Phaser.Types.GameObjects.Text.TextStyle,
-  ): Phaser.GameObjects.Text {
-    return this.add
-      .text(x, y, text, {
-        fontFamily: 'IBM Plex Mono, Menlo, monospace',
-        ...style,
-      })
-      .setResolution(Math.min(window.devicePixelRatio || 1, 2));
-  }
 }

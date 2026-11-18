@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { addAudioToggle, bindMouseClickSound } from '../audio/AudioControls';
-import { translate } from '../i18n/i18n';
+import { AudioManager } from '../audio/AudioManager';
+import AudioToggleEntity from '../entities/AudioToggleEntity';
+import TypographyEntity from '../entities/TypographyEntity';
 
 interface MorseVictorySceneData {
   signal?: 'SOS' | 'WIN';
@@ -17,32 +18,48 @@ export default class MorseVictoryScene extends Phaser.Scene {
   }
 
   create(data: MorseVictorySceneData = {}): void {
-    this.cameras.main.setBackgroundColor('#ffffff');
-    addAudioToggle(this);
-    bindMouseClickSound(this);
+    this.createBackground();
+    this.createAudioControls();
     this.registry.set('shift-backdoor-visit-pending', false);
-    const wonByHacking = data.signal === 'WIN';
+    this.createEndingText(data.signal === 'WIN');
+    this.bindInput();
+  }
 
-    this.add.text(640, 270, translate(wonByHacking ? 'SISTEMA SUPERADO' : 'SEÑAL RECIBIDA'), {
-      color: '#111111',
-      fontFamily: 'IBM Plex Mono, Menlo, monospace',
-      fontSize: '34px',
-    }).setOrigin(0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2));
+  private createBackground(): void {
+    this.cameras.main.setBackgroundColor('#ffffff');
+  }
 
-    this.add.text(640, 365, translate(wonByHacking
-      ? 'El Operador perdió el control. Encontraste la salida.'
-      : 'El barco está a salvo. El Operador no sabe quién contestó.'), {
-      color: '#555555',
-      fontFamily: 'IBM Plex Mono, Menlo, monospace',
-      fontSize: '17px',
-    }).setOrigin(0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2));
+  private createAudioControls(): void {
+    AudioManager.attach(this);
+    new AudioToggleEntity(this);
+  }
 
-    this.add.text(640, 450, translate('FIN'), {
-      color: '#777777',
-      fontFamily: 'IBM Plex Mono, Menlo, monospace',
-      fontSize: '14px',
-    }).setOrigin(0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2));
+  private createEndingText(wonByHacking: boolean): void {
+    new TypographyEntity(
+      this,
+      640,
+      270,
+      wonByHacking ? 'copy.sistema-superado' : 'copy.senal-recibida',
+      'ending-heading',
+    );
+    new TypographyEntity(
+      this,
+      640,
+      365,
+      wonByHacking
+        ? 'copy.el-operador-perdio-el-control-encontraste-la-salida'
+        : 'copy.el-barco-esta-a-salvo-el-operador-no-sabe-quien-contes',
+      'ending-copy',
+    );
 
+    this.addFinalLabel();
+  }
+
+  private addFinalLabel(): void {
+    new TypographyEntity(this, 640, 450, 'copy.fin', 'ending-label');
+  }
+
+  private bindInput(): void {
     this.input.keyboard?.on('keydown', this.handleKeyDown);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard?.off('keydown', this.handleKeyDown);

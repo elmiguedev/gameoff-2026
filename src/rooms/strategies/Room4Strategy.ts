@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
-import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
-import { playSound } from '../../audio/AudioControls';
-import { translate } from '../../i18n/i18n';
+import RoomBaseStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomBaseStrategy';
+import { AudioManager } from '../../audio/AudioManager';
+import TypographyEntity from '../../entities/TypographyEntity';
 
 interface TypedCharacter {
   value: string;
@@ -9,7 +9,7 @@ interface TypedCharacter {
   shiftHeld: boolean;
 }
 
-export default class FourthRoomStrategy extends RoomStrategy {
+export default class Room4Strategy extends RoomBaseStrategy {
   readonly prompt = '';
 
   private readonly typedCharacters: TypedCharacter[] = [];
@@ -25,19 +25,10 @@ export default class FourthRoomStrategy extends RoomStrategy {
     this.typedCharacters.length = 0;
     this.unrelatedAttempts = 0;
     this.hasShownConceptHint = false;
-    this.addRoomObject(this.scene.add.text(640, 165, translate('Contraseña?'), {
-      color: '#666666',
-      fontFamily: 'IBM Plex Mono, Menlo, monospace',
-      fontSize: '16px',
-      fontStyle: '300',
-    }).setOrigin(0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)));
+    this.addRoomObject(new TypographyEntity(this.scene, 640, 165, 'copy.contrasena', 'auxiliary'));
 
     this.inputDisplay = this.addRoomObject(
-      this.scene.add.text(640, 295, '', {
-        color: '#111111',
-        fontFamily: 'IBM Plex Mono, Menlo, monospace',
-        fontSize: '28px',
-      }).setOrigin(0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)),
+      new TypographyEntity(this.scene, 640, 295, '', 'input-medium'),
     );
 
     this.addRoomObject(
@@ -46,7 +37,7 @@ export default class FourthRoomStrategy extends RoomStrategy {
 
     this.addRoomObject(this.scene.add.image(640, 455, 'caps-key').setDisplaySize(520, 520 / 3));
 
-    this.showHint('Qué suerte: acá está Caps Lock. La tecla perfecta para escribir TODO COMO SI ESTUVIERAS ENOJADO.');
+    this.showHint('copy.que-suerte-aca-esta-caps-lock-la-tecla-perfecta-para-e');
   }
 
   protected onShiftDown(_side: ShiftSide): void {}
@@ -55,7 +46,7 @@ export default class FourthRoomStrategy extends RoomStrategy {
     if (event.repeat) return;
 
     if (event.code === 'Backspace') {
-      if (this.typedCharacters.length > 0) playSound(this.scene, 'input');
+      if (this.typedCharacters.length > 0) AudioManager.play(this.scene, 'input');
       this.typedCharacters.pop();
       this.updateInputDisplay();
       return;
@@ -68,7 +59,7 @@ export default class FourthRoomStrategy extends RoomStrategy {
 
     if (!/^[a-z]$/i.test(event.key)) return;
 
-    playSound(this.scene, 'input');
+    AudioManager.play(this.scene, 'input');
     this.typedCharacters.push({
       value: event.key,
       capsLockActive: event.getModifierState('CapsLock'),
@@ -84,38 +75,38 @@ export default class FourthRoomStrategy extends RoomStrategy {
       && this.typedCharacters.every(({ shiftHeld }) => shiftHeld);
 
     if (input === 'SHIFT' && everyLetterUsedShift && !usedCapsLock) {
-      this.complete('Bien. No todas las mayúsculas son iguales.');
+      this.complete('copy.bien-no-todas-las-mayusculas-son-iguales');
       return;
     }
 
     if (input.toLowerCase() === 'shift') {
       if (usedCapsLock) {
-        this.showHint('La palabra es la correcta. Pero Caps Lock no hace el mismo trabajo que mantener apretada otra tecla.');
+        this.showHint('copy.la-palabra-es-la-correcta-pero-caps-lock-no-hace-el-mi');
         return;
       }
 
-      this.showHint('La palabra parece correcta. Pero esas mayúsculas todavía no están del todo bien resueltas.');
+      this.showHint('copy.la-palabra-parece-correcta-pero-esas-mayusculas-todavi');
       return;
     }
 
     if (usedCapsLock) {
-      this.showHint('Veo que todavía no estamos entendiendo de qué va todo esto…');
+      this.showHint('copy.veo-que-todavia-no-estamos-entendiendo-de-que-va-todo');
       return;
     }
 
     if (input.length === 0) {
-      this.showHint('Vacío. Técnicamente, una respuesta; no la que buscábamos.');
+      this.showHint('copy.vacio-tecnicamente-una-respuesta-no-la-que-buscabamos');
       return;
     }
 
     this.unrelatedAttempts += 1;
     if (this.unrelatedAttempts > 4 && !this.hasShownConceptHint) {
       this.hasShownConceptHint = true;
-      this.showHint('Quizá la clave tenga algo que ver con el concepto que sostiene todo este juego. No hace falta inventar una palabra nueva.');
+      this.showHint('copy.quiza-la-clave-tenga-algo-que-ver-con-el-concepto-que');
       return;
     }
 
-    this.showHint('No. Esa palabra parece haber llegado a esta sala por accidente.');
+    this.showHint('copy.no-esa-palabra-parece-haber-llegado-a-esta-sala-por-ac');
   }
 
   private updateInputDisplay(): void {

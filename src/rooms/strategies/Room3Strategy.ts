@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
-import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
+import RoomBaseStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomBaseStrategy';
 
-export default class ThirdRoomStrategy extends RoomStrategy {
+export default class Room3Strategy extends RoomBaseStrategy {
   readonly prompt = '';
 
   constructor(scene: Phaser.Scene, progress: RoomProgress, actions: RoomActions) {
@@ -13,7 +13,7 @@ export default class ThirdRoomStrategy extends RoomStrategy {
     shiftLogo
       .setDisplaySize(520, 520 / 3)
       .setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => this.showHint('¿En serio?'));
+      .on('pointerdown', () => this.showHint('copy.en-serio'));
     this.addRoomObject(shiftLogo);
 
     const mouseCursor = this.scene.add.image(799, 399, 'mouse-cursor');
@@ -22,6 +22,6 @@ export default class ThirdRoomStrategy extends RoomStrategy {
   }
 
   protected onShiftDown(_side: ShiftSide): void {
-    this.complete('Bien. Era una tecla dibujada. El dibujo estaba haciendo su mejor esfuerzo.');
+    this.complete('copy.bien-era-una-tecla-dibujada-el-dibujo-estaba-haciendo');
   }
 }

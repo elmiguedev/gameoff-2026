@@ -1,9 +1,9 @@
-import RoomStrategy, { type ShiftSide } from './RoomStrategy';
-import type { RoomActions, RoomProgress } from './RoomStrategy';
+import RoomBaseStrategy, { type ShiftSide } from './RoomBaseStrategy';
+import type { RoomActions, RoomProgress } from './RoomBaseStrategy';
 import type Phaser from 'phaser';
 import ShiftEntity from '../../entities/ShiftEntity';
 
-export default class FirstRoomStrategy extends RoomStrategy {
+export default class Room2Strategy extends RoomBaseStrategy {
   readonly prompt = '';
   private shiftKey?: ShiftEntity;
 
@@ -16,8 +16,12 @@ export default class FirstRoomStrategy extends RoomStrategy {
   }
 
   protected onShiftDown(side: ShiftSide): void {
-    this.progress.firstShiftSide = side;
-    this.complete('Bien. Apretar Shift funcionaba. De nada por la complicación.');
+    if (side === this.progress.firstShiftSide) {
+      this.showHint('copy.no-hay-un-solo-shift');
+      return;
+    }
+
+    this.complete('copy.la-puerta-cedio-no-te-acostumbres-no-suele-pasar-cuand');
   }
 
   protected override onShiftVisualDown(side: ShiftSide): void {

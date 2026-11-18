@@ -1,7 +1,8 @@
 import type Phaser from 'phaser';
-import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
+import type { TranslationKey } from '../../i18n/i18n';
+import RoomBaseStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomBaseStrategy';
 
-export default class SixthRoomStrategy extends RoomStrategy {
+export default class Room6Strategy extends RoomBaseStrategy {
   readonly prompt = '';
 
   private static readonly WAIT_DURATION_MS = 7000;
@@ -12,12 +13,12 @@ export default class SixthRoomStrategy extends RoomStrategy {
   private clockImage?: Phaser.GameObjects.Image;
 
   private readonly interactionLines = [
-    '¿Estás probando teclas? El reloj agradece que confirmes que funciona.',
-    'Esa fue distinta. La espera, no.',
-    'El reloj sigue corriendo. Vos estás haciendo un gran trabajo interrumpiéndolo.',
-    'Cada tecla que tocás reinicia la espera. Te lo digo por si querías una explicación menos sutil.',
-    'Ahora sí: no toques nada. Nada de nada.',
-  ];
+    'copy.estas-probando-teclas-el-reloj-agradece-que-confirmes',
+    'copy.esa-fue-distinta-la-espera-no',
+    'copy.el-reloj-sigue-corriendo-vos-estas-haciendo-un-gran-tr',
+    'copy.cada-tecla-que-tocas-reinicia-la-espera-te-lo-digo-por',
+    'copy.ahora-si-no-toques-nada-nada-de-nada',
+  ] as const satisfies readonly TranslationKey[];
 
   constructor(scene: Phaser.Scene, progress: RoomProgress, actions: RoomActions) {
     super(scene, progress, actions);
@@ -44,23 +45,23 @@ export default class SixthRoomStrategy extends RoomStrategy {
   override update(delta: number): void {
     this.idleTime += delta;
 
-    if (this.idleTime < SixthRoomStrategy.WAIT_DURATION_MS) return;
+    if (this.idleTime < Room6Strategy.WAIT_DURATION_MS) return;
 
     this.clockImage?.setTexture('clock-finished');
-    this.complete('Y ahí está. Esperar era todo el plan. Sí, yo también esperaba algo más emocionante.');
+    this.complete('copy.y-ahi-esta-esperar-era-todo-el-plan-si-yo-tambien-espe');
   }
 
   private registerActivity(): void {
     this.idleTime = 0;
     this.interactionCount += 1;
 
-    if (this.interactionCount < SixthRoomStrategy.INTERACTIONS_BEFORE_FIRST_HINT) return;
+    if (this.interactionCount < Room6Strategy.INTERACTIONS_BEFORE_FIRST_HINT) return;
 
     const lineIndex = Math.min(
-      this.interactionCount - SixthRoomStrategy.INTERACTIONS_BEFORE_FIRST_HINT,
+      this.interactionCount - Room6Strategy.INTERACTIONS_BEFORE_FIRST_HINT,
       this.interactionLines.length - 1,
     );
-    this.showHint(this.interactionLines[lineIndex] ?? 'Ahora sí: no toques nada.');
+    this.showHint(this.interactionLines[lineIndex] ?? 'copy.ahora-si-no-toques-nada');
   }
 
 }

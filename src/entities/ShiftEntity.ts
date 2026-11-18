@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { ShiftSide } from '../rooms/strategies/RoomStrategy';
+import type { ShiftSide } from '../rooms/strategies/RoomBaseStrategy';
 
 export default class ShiftEntity extends Phaser.GameObjects.Image {
   private readonly pressedSides = new Set<ShiftSide>();

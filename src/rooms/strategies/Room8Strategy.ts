@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
-import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
+import RoomBaseStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomBaseStrategy';
 
-export default class ShiftTabRoomStrategy extends RoomStrategy {
+export default class Room8Strategy extends RoomBaseStrategy {
   readonly prompt = '';
 
   private backspaceAttempts = 0;
@@ -17,15 +17,15 @@ export default class ShiftTabRoomStrategy extends RoomStrategy {
 
     if (this.progress.completedRooms.has(8)) {
       this.addRoomObject(this.scene.add.image(640, 350, 'exit-icon').setDisplaySize(360, 240));
-      this.complete('Lo lograste: encontraste el camino de vuelta. Cuando quieras, seguimos.');
+      this.complete('copy.lo-lograste-encontraste-el-camino-de-vuelta-cuando-qui');
       return;
     }
 
-    this.showHint('El camino hasta acá parece bastante convencido de una sola dirección.');
+    this.showHint('copy.el-camino-hasta-aca-parece-bastante-convencido-de-una');
   }
 
   protected onShiftDown(_side: ShiftSide): void {
-    this.showHint('No iba a ser tan sencillo esta vez. Shift solo no hace milagros.');
+    this.showHint('copy.no-iba-a-ser-tan-sencillo-esta-vez-shift-solo-no-hace');
   }
 
   protected override onKeyDown(event: KeyboardEvent): void {
@@ -35,9 +35,9 @@ export default class ShiftTabRoomStrategy extends RoomStrategy {
       event.preventDefault();
       this.backspaceAttempts += 1;
       if (this.backspaceAttempts === 1) {
-        this.showHint('Retroceso. Un método bastante literal. Pero no es la única forma de volver.');
+        this.showHint('copy.retroceso-un-metodo-bastante-literal-pero-no-es-la-uni');
       } else if (this.backspaceAttempts === 3) {
-        this.showHint('Insistir con Retroceso no va a cambiar la dirección del recorrido.');
+        this.showHint('copy.insistir-con-retroceso-no-va-a-cambiar-la-direccion-de');
       }
       return;
     }
@@ -45,17 +45,17 @@ export default class ShiftTabRoomStrategy extends RoomStrategy {
     if (event.code === 'Tab') {
       this.tabAttempts += 1;
       if (this.tabAttempts === 1) {
-        this.showHint('Tab suele avanzar entre opciones. No siempre hace falta avanzar.');
+        this.showHint('copy.tab-suele-avanzar-entre-opciones-no-siempre-hace-falta');
       } else if (this.tabAttempts === 2) {
-        this.showHint('Tab solo no alcanza para volver. Por suerte, el teclado acepta compañía.');
+        this.showHint('copy.tab-solo-no-alcanza-para-volver-por-suerte-el-teclado');
       } else if (this.tabAttempts === 3) {
-        this.showHint('Shift puede cambiar el sentido de Tab. No lo digo por nada.');
+        this.showHint('copy.shift-puede-cambiar-el-sentido-de-tab-no-lo-digo-por-n');
       }
     }
   }
 
   protected override onShiftTab(): void {
     this.progress.roomNineReturnPending = true;
-    this.complete('Volviste. Sabía que en algún momento ibas a querer revisar tus decisiones.');
+    this.complete('copy.volviste-sabia-que-en-algun-momento-ibas-a-querer-revi');
   }
 }

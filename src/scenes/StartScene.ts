@@ -1,8 +1,12 @@
 import Phaser from 'phaser';
-import { MORSE_EASTER_EGG_EVENT } from '../input/ShiftMorseEasterEgg';
-import { addAudioToggle, bindMouseClickSound } from '../audio/AudioControls';
+import { MORSE_SIGNAL_EVENT } from '../input/MorseInputComponent';
+import { AudioManager } from '../audio/AudioManager';
+import AudioToggleEntity from '../entities/AudioToggleEntity';
+import LanguageToggleEntity from '../entities/LanguageToggleEntity';
+import OperatorPanelEntity from '../entities/OperatorPanelEntity';
+import TypographyEntity from '../entities/TypographyEntity';
 import BootloaderScene from './BootloaderScene';
-import { getLanguage, setLanguage, translate, type Language } from '../i18n/i18n';
+import { getLanguage, type TranslationKey } from '../i18n/i18n';
 
 export default class StartScene extends Phaser.Scene {
   private static readonly START_DELAY_MS = 180;
@@ -12,11 +16,10 @@ export default class StartScene extends Phaser.Scene {
   private startTimer?: number;
   private idleHintTimer?: number;
   private transitionStarted = false;
-  private idleHintText?: Phaser.GameObjects.Text;
-  private spanishOption?: Phaser.GameObjects.Text;
-  private englishOption?: Phaser.GameObjects.Text;
-  private startNotice?: string;
-  private idleMessageKey?: string;
+  private operatorPanel?: OperatorPanelEntity;
+  private languageToggle?: LanguageToggleEntity;
+  private startNotice?: TranslationKey;
+  private idleMessageKey?: TranslationKey;
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
     if (this.transitionStarted) return;
@@ -26,7 +29,7 @@ export default class StartScene extends Phaser.Scene {
 
     if (event.code === 'ArrowLeft' || event.code === 'ArrowRight') {
       event.preventDefault();
-      this.selectLanguage(getLanguage() === 'es' ? 'en' : 'es');
+      this.languageToggle?.setLanguage(getLanguage() === 'es' ? 'en' : 'es');
       return;
     }
 
@@ -66,96 +69,75 @@ export default class StartScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.resetSceneState();
+    this.createBackground();
+    this.createAudioControls();
+    this.createTitle();
+    this.createLanguageToggle();
+    this.createOperatorPanel();
+    this.createPendingNotice();
+    this.bindInput();
+  }
+
+  private resetSceneState(): void {
     this.transitionStarted = false;
     this.heldShifts.clear();
     this.startNotice = undefined;
     this.idleMessageKey = undefined;
     this.input.keyboard?.off('keydown', this.handleKeyDown);
     this.input.keyboard?.off('keyup', this.handleKeyUp);
-    this.cameras.main.setBackgroundColor('#ffffff');
     BootloaderScene.resumeBackgroundMusic();
-    addAudioToggle(this);
-    bindMouseClickSound(this);
+  }
 
-    this.add
-      .text(640, 315, 'SHIFT', {
-        color: '#111111',
-        fontFamily: 'IBM Plex Mono, Menlo, monospace',
-        fontSize: '72px',
-        fontStyle: '500',
-      })
-      .setOrigin(0.5)
-      .setResolution(Math.min(window.devicePixelRatio || 1, 2));
+  private createBackground(): void {
+    this.cameras.main.setBackgroundColor('#ffffff');
+  }
 
-    this.englishOption = this.add.text(48, 48, 'EN', {
-      color: '#888888',
-      fontFamily: 'IBM Plex Mono, Menlo, monospace',
-      fontSize: '14px',
-    }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => this.selectLanguage('en'))
-      .setResolution(Math.min(window.devicePixelRatio || 1, 2));
-    this.add.text(76, 48, '|', {
-      color: '#b0b0b0',
-      fontFamily: 'IBM Plex Mono, Menlo, monospace',
-      fontSize: '14px',
-    }).setOrigin(0, 0.5)
-      .setResolution(Math.min(window.devicePixelRatio || 1, 2));
-    this.spanishOption = this.add.text(91, 48, 'ES', {
-      color: '#111111',
-      fontFamily: 'IBM Plex Mono, Menlo, monospace',
-      fontSize: '14px',
-    }).setOrigin(0, 0.5).setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => this.selectLanguage('es'))
-      .setResolution(Math.min(window.devicePixelRatio || 1, 2));
+  private createAudioControls(): void {
+    AudioManager.attach(this);
+    new AudioToggleEntity(this);
+  }
 
-    this.idleHintText = this.add
-      .text(640, 620, '', {
-        color: '#555555',
-        fontFamily: 'IBM Plex Mono, Menlo, monospace',
-        fontSize: '19px',
-        lineSpacing: 6,
-        align: 'center',
-        wordWrap: { width: (1280 * 2) / 3, useAdvancedWrap: true },
-      })
-      .setOrigin(0.5)
-      .setResolution(Math.min(window.devicePixelRatio || 1, 2));
+  private createTitle(): void {
+    new TypographyEntity(this, 640, 315, 'SHIFT', 'title');
+  }
 
+  private createLanguageToggle(): void {
+    this.languageToggle = new LanguageToggleEntity(this);
+    this.languageToggle.on('languagechange', this.refreshOperatorMessage);
+  }
+
+  private createOperatorPanel(): void {
+    this.operatorPanel = new OperatorPanelEntity(this, 640, 620, 'start-operator');
+  }
+
+  private createPendingNotice(): void {
     const narratorRestartTease = this.registry.get('narrator-restart-tease-pending') === true;
     const operatorNewSession = this.registry.get('operator-new-session-pending') === true;
     if (narratorRestartTease) {
       this.registry.set('narrator-restart-tease-pending', false);
-      this.startNotice = 'Ja. Volviste. No encontraste la opción secreta. Era bastante sencilla. Ahora vas a tener que resolver las catorce salas de nuevo. Desde cero.';
+      this.startNotice = 'copy.ja-volviste-no-encontraste-la-opcion-secreta-era-basta';
     } else if (operatorNewSession) {
       this.registry.set('operator-new-session-pending', false);
-      this.startNotice = 'NUEVA SESIÓN INICIADA.';
+      this.startNotice = 'copy.nueva-sesion-iniciada';
     }
-    this.updateLanguageControls();
     if (this.startNotice) {
       this.idleMessageKey = this.startNotice;
-      this.idleHintText.setText(translate(this.startNotice));
+      this.operatorPanel?.showMessage(this.startNotice);
     }
+  }
 
+  private bindInput(): void {
     this.input.keyboard?.on('keydown', this.handleKeyDown);
     this.input.keyboard?.on('keyup', this.handleKeyUp);
-    window.addEventListener(MORSE_EASTER_EGG_EVENT, this.handleMorseVictory);
+    window.addEventListener(MORSE_SIGNAL_EVENT, this.handleMorseVictory);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanupInput, this);
-    if (!narratorRestartTease && !operatorNewSession) this.resetIdleHintTimer();
+    if (!this.startNotice) this.resetIdleHintTimer();
   }
 
-  private selectLanguage(language: Language): void {
-    if (getLanguage() === language) return;
-    setLanguage(language);
-    this.updateLanguageControls();
-    if (this.idleMessageKey) this.idleHintText?.setText(translate(this.idleMessageKey));
-  }
-
-  private updateLanguageControls(): void {
-    const language = getLanguage();
-    this.spanishOption?.setText('ES');
-    this.englishOption?.setText('EN');
-    this.spanishOption?.setColor(language === 'es' ? '#111111' : '#888888');
-    this.englishOption?.setColor(language === 'en' ? '#111111' : '#888888');
-  }
+  private readonly refreshOperatorMessage = (): void => {
+    if (this.idleMessageKey) this.operatorPanel?.showMessage(this.idleMessageKey);
+  };
 
   private startGame(backdoorAttempt: boolean, secretVictory = false): void {
     if (this.transitionStarted) return;
@@ -189,19 +171,20 @@ export default class StartScene extends Phaser.Scene {
     }
     this.input.keyboard?.off('keydown', this.handleKeyDown);
     this.input.keyboard?.off('keyup', this.handleKeyUp);
-    window.removeEventListener(MORSE_EASTER_EGG_EVENT, this.handleMorseVictory);
+    window.removeEventListener(MORSE_SIGNAL_EVENT, this.handleMorseVictory);
+    this.languageToggle?.off('languagechange', this.refreshOperatorMessage);
   }
 
   private resetIdleHintTimer(): void {
     if (this.idleHintTimer !== undefined) window.clearTimeout(this.idleHintTimer);
-    this.idleHintText?.setText('');
+    this.operatorPanel?.showText('');
     this.idleMessageKey = undefined;
 
     this.idleHintTimer = window.setTimeout(() => {
       this.idleHintTimer = undefined;
       if (this.transitionStarted || this.heldShifts.size > 0) return;
-      this.idleMessageKey = '¿Esperabas que empezara solo? Presioná Shift y hacemos como que fue tu idea.';
-      this.idleHintText?.setText(translate(this.idleMessageKey));
+      this.idleMessageKey = 'copy.esperabas-que-empezara-solo-presiona-shift-y-hacemos-c';
+      this.operatorPanel?.showMessage(this.idleMessageKey);
     }, StartScene.IDLE_HINT_DELAY_MS);
   }
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { isRescueMorseSignal, recognizeMorseSignal } from './ShiftMorseEasterEgg';
+import { isRescueMorseSignal, recognizeMorseSignal } from './MorseSignal';
 
 describe('SOS timing', () => {
   test('accepts held dots and dashes with human timing variation', () => {

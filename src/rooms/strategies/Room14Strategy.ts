@@ -1,9 +1,9 @@
 import type Phaser from 'phaser';
-import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
+import RoomBaseStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomBaseStrategy';
 import ShiftEntity from '../../entities/ShiftEntity';
 import { getRoomNarration } from '../../content/roomNarration';
 
-export default class FourteenthRoomStrategy extends RoomStrategy {
+export default class Room14Strategy extends RoomBaseStrategy {
   readonly prompt = '';
 
   private hasTriedShift = false;
@@ -17,17 +17,17 @@ export default class FourteenthRoomStrategy extends RoomStrategy {
     this.hasTriedShift = false;
     this.shiftKey = this.addRoomObject(new ShiftEntity(this.scene, 640, 350, 520, 520 / 3));
 
-    this.showHint(getRoomNarration('normal', 14) ?? 'Llegaste al final. Felicitaciones.');
+    this.showHint(getRoomNarration('normal', 14) ?? 'copy.llegaste-al-final-felicitaciones');
   }
 
   protected onShiftDown(_side: ShiftSide): void {
     if (!this.hasTriedShift) {
       this.hasTriedShift = true;
-      this.showHint('No pasó nada. Recordá que el teclado tiene más de una dirección.\nNo voy a enumerarlas.');
+      this.showHint('copy.no-paso-nada-recorda-que-el-teclado-tiene-mas-de-una-d');
       return;
     }
 
-    this.showHint('Sigue sin pasar nada. Espero que no se te ocurra volver; sería una forma bastante predecible de salir.');
+    this.showHint('copy.sigue-sin-pasar-nada-espero-que-no-se-te-ocurra-volver');
   }
 
   protected override onShiftVisualDown(side: ShiftSide): void {

@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
-import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
+import RoomBaseStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomBaseStrategy';
 
-export default class ClickableShiftRoomStrategy extends RoomStrategy {
+export default class Room11Strategy extends RoomBaseStrategy {
   readonly prompt = '';
 
   constructor(scene: Phaser.Scene, progress: RoomProgress, actions: RoomActions) {
@@ -20,21 +20,21 @@ export default class ClickableShiftRoomStrategy extends RoomStrategy {
     mouseCursor.setDisplaySize(78, 71);
     this.addRoomObject(mouseCursor);
 
-    this.showHint('Qué familiar. Esta vez el dibujo espera que lo pulses.');
+    this.showHint('copy.que-familiar-esta-vez-el-dibujo-espera-que-lo-pulses');
   }
 
   protected onShiftDown(_side: ShiftSide): void {
-    this.showHint('¿Shift? ¿En serio? Esta vez hasta el dibujo te estaba señalando qué hacer.');
+    this.showHint('copy.shift-en-serio-esta-vez-hasta-el-dibujo-te-estaba-sena');
   }
 
   protected override onKeyDown(event: KeyboardEvent): void {
     if (event.code !== 'Tab') return;
 
     event.preventDefault();
-    this.showHint('Tab no. Esta sala ya tiene suficientes teclas con problemas de identidad.');
+    this.showHint('copy.tab-no-esta-sala-ya-tiene-suficientes-teclas-con-probl');
   }
 
   private activateKey(): void {
-    this.complete('¡Ah, cierto! Era un botón. Bien visto… cuando finalmente lo viste.');
+    this.complete('copy.ah-cierto-era-un-boton-bien-visto-cuando-finalmente-lo');
   }
 }
