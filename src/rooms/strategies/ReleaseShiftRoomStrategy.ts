@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
 import ShiftEntity from '../../entities/ShiftEntity';
+import { translate } from '../../i18n/i18n';
 
 export default class ReleaseShiftRoomStrategy extends RoomStrategy {
   readonly prompt = '';
@@ -16,7 +17,7 @@ export default class ReleaseShiftRoomStrategy extends RoomStrategy {
   protected override onEnter(): void {
     this.shiftsHeldAtEntry.clear();
     this.failedPressAttempts = 0;
-    this.addRoomObject(this.scene.add.text(640, 235, 'Soltar, solo soltar', {
+    this.addRoomObject(this.scene.add.text(640, 235, translate('Soltar, solo soltar'), {
       color: '#111111',
       fontFamily: 'IBM Plex Mono, Menlo, monospace',
       fontSize: '24px',

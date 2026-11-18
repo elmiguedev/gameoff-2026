@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { translate } from '../i18n/i18n';
 
 export default class BootloaderScene extends Phaser.Scene {
   private static backgroundMusic?: Phaser.Sound.BaseSound;
@@ -50,7 +51,7 @@ export default class BootloaderScene extends Phaser.Scene {
     this.startBackgroundMusic();
 
     this.add
-      .text(640, 360, 'CARGANDO…', {
+       .text(640, 360, translate('CARGANDO…'), {
         color: '#555555',
         fontFamily: 'IBM Plex Mono, Menlo, monospace',
         fontSize: '18px',

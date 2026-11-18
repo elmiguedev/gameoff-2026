@@ -7,6 +7,7 @@ import { addAudioToggle, bindMouseClickSound, playSound } from '../audio/AudioCo
 import { getRoomNarration } from '../content/roomNarration';
 import { createControlMonitor } from '../rooms/ControlMonitor';
 import BootloaderScene from './BootloaderScene';
+import { translate } from '../i18n/i18n';
 
 interface GameSceneData {
   backdoorAttempt?: boolean;
@@ -109,7 +110,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   public setRoomPrompt(text: string): void {
-    this.roomPrompt.setText(text);
+    this.roomPrompt.setText(translate(text));
   }
 
   public clearRoomStatus(): void {
@@ -117,7 +118,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   public showHint(text: string): void {
-    this.statusText.setText(text);
+    this.statusText.setText(translate(text));
   }
 
   public completeRoom(closingText: string): void {
@@ -129,15 +130,17 @@ export default class GameScene extends Phaser.Scene {
     const requiresBriefDelay = this.currentRoomNumber === 9 || this.currentRoomNumber === 13;
     this.roomAdvanceAvailableAt = Date.now() + (requiresBriefDelay ? GameScene.ROOM_ADVANCE_DELAY_MS : 0);
     const completedRoomNumber = this.currentRoomNumber;
+    const localizedClosingText = translate(closingText);
+    const continuePrompt = translate('PRESIONÁ SHIFT PARA CONTINUAR');
     this.statusText.setText(requiresBriefDelay
-      ? closingText
-      : `${closingText}\n\nPRESIONÁ SHIFT PARA CONTINUAR`);
+      ? localizedClosingText
+      : `${localizedClosingText}\n\n${continuePrompt}`);
 
     if (!requiresBriefDelay) return;
 
     this.time.delayedCall(GameScene.ROOM_ADVANCE_DELAY_MS, () => {
       if (!this.roomCompleted || this.currentRoomNumber !== completedRoomNumber) return;
-      this.statusText.setText(`${closingText}\n\nPRESIONÁ SHIFT PARA CONTINUAR`);
+      this.statusText.setText(`${localizedClosingText}\n\n${continuePrompt}`);
     });
   }
 
@@ -155,7 +158,7 @@ export default class GameScene extends Phaser.Scene {
       (child as Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Visible).setVisible(false);
     });
     const monitor = createControlMonitor(this).setDepth(2000);
-    const disconnectedLabel = this.addText(640, 340, closingText, {
+    const disconnectedLabel = this.addText(640, 340, translate(closingText), {
       color: '#f2f2f2',
       fontSize: '26px',
       align: 'center',
@@ -217,7 +220,7 @@ export default class GameScene extends Phaser.Scene {
 
   private createRoomSelector(): void {
     this.roomSelectorButtons = [];
-    this.addText(1080, 26, 'DEV · SALAS', {
+    this.addText(1080, 26, translate('DEV · SALAS'), {
       color: '#888888',
       fontSize: '12px',
     }).setOrigin(0, 0.5);
@@ -447,7 +450,7 @@ export default class GameScene extends Phaser.Scene {
       room.disableInteractions();
       this.roomCompleted = true;
       const returnPhase = this.narrationPhase === 'replay' ? 'second-return' : 'return';
-      this.statusText.setText(getRoomNarration(returnPhase, roomNumber) ?? 'No hace falta seguir retrocediendo.');
+      this.showHint(getRoomNarration(returnPhase, roomNumber) ?? 'No hace falta seguir retrocediendo.');
       return;
     }
 
@@ -482,8 +485,8 @@ export default class GameScene extends Phaser.Scene {
     this.showingPrototypeEnd = true;
     this.currentRoom = undefined;
     this.roomLabel.setText('SHIFT');
-    this.roomPrompt.setText('FIN DEL PROTOTIPO');
-    this.statusText.setText('PRESIONÁ SHIFT PARA VOLVER AL INICIO');
+    this.roomPrompt.setText(translate('FIN DEL PROTOTIPO'));
+    this.statusText.setText(translate('PRESIONÁ SHIFT PARA VOLVER AL INICIO'));
   }
 
   private createRoomActions(roomNumber: number): RoomActions {

@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
 import { playSound } from '../../audio/AudioControls';
+import { translate } from '../../i18n/i18n';
 
 interface TypedCharacter {
   value: string;
@@ -24,7 +25,7 @@ export default class FourthRoomStrategy extends RoomStrategy {
     this.typedCharacters.length = 0;
     this.unrelatedAttempts = 0;
     this.hasShownConceptHint = false;
-    this.addRoomObject(this.scene.add.text(640, 165, 'Contraseña?', {
+    this.addRoomObject(this.scene.add.text(640, 165, translate('Contraseña?'), {
       color: '#666666',
       fontFamily: 'IBM Plex Mono, Menlo, monospace',
       fontSize: '16px',

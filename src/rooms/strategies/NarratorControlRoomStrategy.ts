@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } from './RoomStrategy';
 import { createControlMonitor } from '../ControlMonitor';
+import { getLanguage, translate } from '../../i18n/i18n';
 
 const OPTIONS = [
   'REVISAR ÍNDICE DE SALAS',
@@ -16,6 +17,16 @@ const ROOM_INDEX = [
   '05 Cerradura          12 Soltar',
   '06 Espera             13 Morse',
   '07 Selección          14 Final',
+].join('\n');
+
+const ROOM_INDEX_EN = [
+  '01 Start              08 Shift+Tab',
+  '02 Two Shifts          09 Alternation',
+  '03 Drawing             10 Map',
+  '04 Password            11 Click',
+  '05 Lock                12 Release',
+  '06 Wait                13 Morse',
+  '07 Selection           14 Ending',
 ].join('\n');
 
 export default class NarratorControlRoomStrategy extends RoomStrategy {
@@ -51,12 +62,17 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
 
     this.addLabel(640, 205, 'OPERADOR: ACTIVO', 28, '#f5f5f5');
     this.panelLabel = this.addLabel(250, 285, 'PANEL DE CONTROL', 20, '#b8b8b8', 0);
-    this.indexList = this.addRoomObject(this.scene.add.text(280, 410, ROOM_INDEX, {
+    this.indexList = this.addRoomObject(this.scene.add.text(
+      280,
+      410,
+      getLanguage() === 'en' ? ROOM_INDEX_EN : ROOM_INDEX,
+      {
       color: '#d0d0d0',
       fontFamily: 'IBM Plex Mono, Menlo, monospace',
       fontSize: '16px',
       lineSpacing: 10,
-    }).setOrigin(0, 0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)).setVisible(false));
+      },
+    ).setOrigin(0, 0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)).setVisible(false));
 
     OPTIONS.forEach((option, index) => {
       const label = this.addRoomObject(this.scene.add.text(280, 375 + index * 54, '', {
@@ -170,11 +186,12 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
   private updateOptions(): void {
     this.optionLabels.forEach((label, index) => {
       const isHiddenCloseOption = index === 2 && !this.exitOptionRevealed;
-      label.setText(isHiddenCloseOption ? '' : `${index === this.focusIndex ? '›' : ' '}  ${OPTIONS[index]}`);
+      const option = OPTIONS[index] ? translate(OPTIONS[index]) : '';
+      label.setText(isHiddenCloseOption ? '' : `${index === this.focusIndex ? '›' : ' '}  ${option}`);
       label.setColor(index === this.focusIndex ? '#ffffff' : '#a0a0a0');
       label.setVisible(!this.roomIndexOpen);
     });
-    this.panelLabel?.setText(this.roomIndexOpen ? 'ÍNDICE DE SALAS' : 'PANEL DE CONTROL');
+    this.panelLabel?.setText(translate(this.roomIndexOpen ? 'ÍNDICE DE SALAS' : 'PANEL DE CONTROL'));
     this.indexList?.setVisible(this.roomIndexOpen);
   }
 
@@ -214,7 +231,7 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
     color: string,
     originX = 0.5,
   ): Phaser.GameObjects.Text {
-    return this.addRoomObject(this.scene.add.text(x, y, text, {
+    return this.addRoomObject(this.scene.add.text(x, y, translate(text), {
       color,
       fontFamily: 'IBM Plex Mono, Menlo, monospace',
       fontSize: `${fontSize}px`,
