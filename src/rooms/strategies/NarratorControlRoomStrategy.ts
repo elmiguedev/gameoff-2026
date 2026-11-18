@@ -7,11 +7,26 @@ const OPTIONS = [
   'CERRAR SESIÓN DEL NARRADOR',
 ];
 
+const ROOM_INDEX = [
+  '01 Inicio             08 Shift+Tab',
+  '02 Dos Shifts         09 Alternancia',
+  '03 Dibujo             10 Mapa',
+  '04 Contraseña         11 Clic',
+  '05 Cerradura          12 Soltar',
+  '06 Espera             13 Morse',
+  '07 Selección          14 Final',
+].join('\n');
+
 export default class NarratorControlRoomStrategy extends RoomStrategy {
   readonly prompt = '';
 
   private focusIndex = 0;
+  private exitOptionRevealed = false;
+  private restartConfirmationPending = false;
+  private roomIndexOpen = false;
   private optionLabels: Phaser.GameObjects.Text[] = [];
+  private panelLabel?: Phaser.GameObjects.Text;
+  private indexList?: Phaser.GameObjects.Text;
 
   constructor(scene: Phaser.Scene, progress: RoomProgress, actions: RoomActions) {
     super(scene, progress, actions);
@@ -19,6 +34,9 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
 
   protected override onEnter(): void {
     this.focusIndex = 0;
+    this.exitOptionRevealed = false;
+    this.restartConfirmationPending = false;
+    this.roomIndexOpen = false;
     this.optionLabels = [];
 
     if (this.progress.backdoorAttempt) {
@@ -28,18 +46,24 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
 
     const monitor = this.addRoomObject(this.scene.add.graphics());
     monitor.lineStyle(3, 0x111111, 1);
-    monitor.strokeRect(350, 145, 580, 390);
+    monitor.strokeRect(350, 145, 580, 340);
     monitor.beginPath();
-    monitor.moveTo(590, 535);
-    monitor.lineTo(590, 575);
-    monitor.lineTo(690, 575);
-    monitor.lineTo(690, 535);
-    monitor.moveTo(550, 576);
-    monitor.lineTo(730, 576);
+    monitor.moveTo(590, 485);
+    monitor.lineTo(590, 520);
+    monitor.lineTo(690, 520);
+    monitor.lineTo(690, 485);
+    monitor.moveTo(550, 521);
+    monitor.lineTo(730, 521);
     monitor.strokePath();
 
     this.addLabel(640, 185, 'NARRADOR: ACTIVO', 20, '#111111');
-    this.addLabel(430, 250, 'PANEL DE CONTROL', 13, '#777777', 0);
+    this.panelLabel = this.addLabel(430, 250, 'PANEL DE CONTROL', 13, '#777777', 0);
+    this.indexList = this.addRoomObject(this.scene.add.text(420, 360, ROOM_INDEX, {
+      color: '#333333',
+      fontFamily: 'IBM Plex Mono, Menlo, monospace',
+      fontSize: '14px',
+      lineSpacing: 8,
+    }).setOrigin(0, 0.5).setResolution(Math.min(window.devicePixelRatio || 1, 2)).setVisible(false));
 
     OPTIONS.forEach((option, index) => {
       const label = this.addRoomObject(this.scene.add.text(430, 335 + index * 58, '', {
@@ -57,65 +81,130 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
       : '¿Ves? Todo sigue bajo control. Incluso vos.');
   }
 
-  protected onShiftDown(_side: ShiftSide): void {}
+  protected onShiftDown(_side: ShiftSide): void {
+    if (this.progress.backdoorAttempt) return;
+    this.showHint('Sí, sabemos que ese es el Shift. ¿Pensás hacer algo con él?');
+  }
 
   protected override onShiftTab(): void {
-    this.focusIndex = (this.focusIndex - 1 + OPTIONS.length) % OPTIONS.length;
-    this.updateOptions();
-
-    if (this.focusIndex === 2) {
-      this.showHint(this.progress.enteredControlRoomEarly
-        ? 'Ya sabías que estaba acá. No significa que tengas que usarla.'
-        : 'Esa opción no estaba a la vista. No hace falta que la elijas.');
-    } else {
-      this.showHint('El panel responde. No veo por qué seguir insistiendo.');
-    }
+    if (this.progress.backdoorAttempt) return;
+    this.showHint('Shift+Tab no hace falta acá. Las flechas alcanzan.');
   }
 
   protected override onKeyDown(event: KeyboardEvent): void {
+    if (this.progress.backdoorAttempt) {
+      if (event.code === 'Escape') this.returnToStart();
+      return;
+    }
+
+    if (this.restartConfirmationPending) {
+      if (event.code === 'Enter' || event.code === 'NumpadEnter') {
+        if (event.repeat) return;
+        this.restartConfirmationPending = false;
+        this.scene.registry.set('narrator-restart-tease-pending', true);
+        this.scene.registry.set('narrator-replay-active', true);
+        this.returnToStart();
+      } else if (event.code === 'Escape') {
+        this.restartConfirmationPending = false;
+        this.showHint('Bien. Por un momento pensé que ibas a tomar una decisión sensata.');
+      }
+      return;
+    }
+
+    if (this.roomIndexOpen && event.code === 'Escape') {
+      this.roomIndexOpen = false;
+      this.updateOptions();
+      this.showHint('Índice cerrado. El recorrido sigue exactamente igual.');
+      return;
+    }
+
+    if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
+      if (event.repeat) return;
+      event.preventDefault();
+
+      if (event.shiftKey && event.code === 'ArrowDown' && this.focusIndex === 1) {
+        this.exitOptionRevealed = true;
+        this.focusIndex = 2;
+        this.roomIndexOpen = false;
+        this.updateOptions();
+        this.showHint('...Y sí, todo es con Shift acá. Hasta para encontrar esta opción. No sé por qué me sorprende.');
+        return;
+      }
+
+      const optionCount = this.exitOptionRevealed ? OPTIONS.length : 2;
+      const direction = event.code === 'ArrowDown' ? 1 : -1;
+      this.focusIndex = (this.focusIndex + direction + optionCount) % optionCount;
+      this.roomIndexOpen = false;
+      this.updateOptions();
+      this.showHint('El panel responde. No veo por qué seguir insistiendo.');
+      return;
+    }
+
     if (event.code !== 'Enter' && event.code !== 'NumpadEnter') return;
     if (event.repeat) return;
 
     if (this.focusIndex === 2) {
-      const closingText = this.progress.enteredControlRoomEarly
-        ? 'Bueno. Fue un placer guiarte. Y sí, recuerdo que encontraste esta sala antes de que empezara el recorrido. La evaluación… la va a hacer otra persona.'
-        : 'Bueno. Fue un placer guiarte. La evaluación de tu desempeño… la va a hacer otra persona.';
+      const closingText = '...Y sí, todo es con Shift acá. Hasta para cerrar sesión. No sé por qué me sorprende.';
       this.finishGame(closingText);
       return;
     }
 
-    this.showHint(this.focusIndex === 0
-      ? 'Un registro impecable. Qué sorpresa.'
-      : 'No. Estamos bien acá.');
+    if (this.focusIndex === 0) {
+      this.roomIndexOpen = !this.roomIndexOpen;
+      this.updateOptions();
+      this.showHint(this.roomIndexOpen
+        ? 'Índice completo. Enter o Esc para cerrar.'
+        : 'Índice cerrado. El recorrido sigue exactamente igual.');
+      return;
+    }
+
+    this.restartConfirmationPending = true;
+    this.showHint('¿Estás seguro? Se borrará todo el progreso y vas a empezar desde el principio.\nENTER para confirmar. ESC para cancelar.');
   }
 
   private updateOptions(): void {
     this.optionLabels.forEach((label, index) => {
-      const isHiddenCloseOption = index === 2 && this.focusIndex !== 2;
+      const isHiddenCloseOption = index === 2 && !this.exitOptionRevealed;
       label.setText(isHiddenCloseOption ? '' : `${index === this.focusIndex ? '›' : ' '}  ${OPTIONS[index]}`);
       label.setColor(index === this.focusIndex ? '#111111' : '#777777');
+      label.setVisible(!this.roomIndexOpen);
     });
+    this.panelLabel?.setText(this.roomIndexOpen ? 'ÍNDICE DE SALAS' : 'PANEL DE CONTROL');
+    this.indexList?.setVisible(this.roomIndexOpen);
   }
 
   private showLockedBackdoor(): void {
     const monitor = this.addRoomObject(this.scene.add.graphics());
     monitor.lineStyle(3, 0x111111, 1);
-    monitor.strokeRect(350, 145, 580, 390);
+    monitor.strokeRect(350, 145, 580, 340);
     monitor.beginPath();
-    monitor.moveTo(590, 535);
-    monitor.lineTo(590, 575);
-    monitor.lineTo(690, 575);
-    monitor.lineTo(690, 535);
-    monitor.moveTo(550, 576);
-    monitor.lineTo(730, 576);
+    monitor.moveTo(590, 485);
+    monitor.lineTo(590, 520);
+    monitor.lineTo(690, 520);
+    monitor.lineTo(690, 485);
+    monitor.moveTo(550, 521);
+    monitor.lineTo(730, 521);
     monitor.strokePath();
 
+    const visits = this.progress.unauthorizedControlRoomVisits ?? 1;
     this.addLabel(640, 215, 'NARRADOR: ACTIVO', 20, '#111111');
     this.addLabel(640, 330, 'PERMISOS INSUFICIENTES', 15, '#555555');
-    this.addLabel(640, 375, 'RECORRIDO: 0/13', 13, '#888888');
-    this.showHint('Todavía no hay nada que cerrar. Volvé cuando tengas algo que recordar.');
 
-    this.scene.time.delayedCall(2600, () => this.returnToStart());
+    if (visits === 3) {
+      this.showHint('No tenés permisos para estar acá. Aunque… S.O.S. no es el único código Morse que sirve en este lugar. ESC para salir.');
+      return;
+    }
+    if (visits === 4) {
+      this.showHint('Seguís insistiendo. A ver si esta te sirve: ¿qué otra palabra de tres letras puede ayudarte a GANAR este juego? ESC para salir.');
+      return;
+    }
+
+    if (visits === 2) {
+      this.showHint('Ya te dije que no tenés permisos. No vuelvas a intentarlo. En serio: no quiero volver a verte acá. ESC para salir.');
+      return;
+    }
+
+    this.showHint('No tenés permisos para estar acá. Espero que no vuelvas a molestarme otra vez. ESC para salir.');
   }
 
   private addLabel(
@@ -125,8 +214,8 @@ export default class NarratorControlRoomStrategy extends RoomStrategy {
     fontSize: number,
     color: string,
     originX = 0.5,
-  ): void {
-    this.addRoomObject(this.scene.add.text(x, y, text, {
+  ): Phaser.GameObjects.Text {
+    return this.addRoomObject(this.scene.add.text(x, y, text, {
       color,
       fontFamily: 'IBM Plex Mono, Menlo, monospace',
       fontSize: `${fontSize}px`,

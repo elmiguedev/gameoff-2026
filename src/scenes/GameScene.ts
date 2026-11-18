@@ -4,6 +4,7 @@ import RoomStrategy, { type RoomActions, type RoomProgress, type ShiftSide } fro
 import { MORSE_EASTER_EGG_EVENT } from '../input/ShiftMorseEasterEgg';
 import { shiftMorseEasterEgg } from '../input/ShiftMorseEasterEgg';
 import { addAudioToggle, bindMouseClickSound, playSound } from '../audio/AudioControls';
+import { getRoomNarration } from '../content/roomNarration';
 
 interface GameSceneData {
   backdoorAttempt?: boolean;
@@ -31,6 +32,8 @@ export default class GameScene extends Phaser.Scene {
   private roomCompleted = false;
   private showingPrototypeEnd = false;
   private returningToStart = false;
+  private narrationPhase: 'normal' | 'replay' = 'normal';
+  private roomNarrationIndex = 0;
   private inControlRoom = false;
   private waitingForEntryShiftRelease = true;
   private roomAdvanceAvailableAt = 0;
@@ -38,6 +41,7 @@ export default class GameScene extends Phaser.Scene {
   private roomLabel!: Phaser.GameObjects.Text;
   private roomPrompt!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
+  private roomSelectorButtons: Phaser.GameObjects.Rectangle[] = [];
 
   constructor() {
     super('GameScene');
@@ -49,6 +53,8 @@ export default class GameScene extends Phaser.Scene {
     this.roomCompleted = false;
     this.showingPrototypeEnd = false;
     this.returningToStart = false;
+    this.narrationPhase = this.registry.get('narrator-replay-active') === true ? 'replay' : 'normal';
+    this.roomNarrationIndex = 0;
     this.inControlRoom = false;
     shiftMorseEasterEgg.setEnabled(false);
     this.physicallyHeldShifts.clear();
@@ -67,7 +73,9 @@ export default class GameScene extends Phaser.Scene {
     this.createRoomLabel();
     this.createRoomPrompt();
     this.createStatusText();
-    this.createRoomSelector();
+    if (new URLSearchParams(window.location.search).get('dev') === 'rooms') {
+      this.createRoomSelector();
+    }
     this.createKeyboardInput();
     addAudioToggle(this);
     bindMouseClickSound(this);
@@ -78,10 +86,14 @@ export default class GameScene extends Phaser.Scene {
     if (data.backdoorAttempt) {
       this.progress.enteredControlRoomEarly = true;
       this.progress.backdoorAttempt = true;
+      const unauthorizedVisits = Number(this.registry.get('shift-control-unauthorized-visits') ?? 0) + 1;
+      this.registry.set('shift-control-unauthorized-visits', unauthorizedVisits);
+      this.progress.unauthorizedControlRoomVisits = unauthorizedVisits;
       this.registry.set('shift-backdoor-visit-pending', true);
       this.createRoom(0);
     } else {
       this.progress.enteredControlRoomEarly = data.enteredControlRoomEarly ?? false;
+      this.progress.unauthorizedControlRoomVisits = Number(this.registry.get('shift-control-unauthorized-visits') ?? 0);
       this.createInitialRoom();
     }
   }
@@ -177,28 +189,30 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private createRoomSelector(): void {
+    this.roomSelectorButtons = [];
     this.addText(1080, 26, 'DEV · SALAS', {
       color: '#888888',
       fontSize: '12px',
     }).setOrigin(0, 0.5);
 
-    for (let roomNumber = 1; roomNumber <= RoomFactory.roomCount; roomNumber += 1) {
-      const column = (roomNumber - 1) % 3;
-      const row = Math.floor((roomNumber - 1) / 3);
+    for (let roomNumber = 0; roomNumber <= RoomFactory.roomCount; roomNumber += 1) {
+      const column = roomNumber % 3;
+      const row = Math.floor(roomNumber / 3);
       const x = 1096 + column * 52;
       const y = 57 + row * 38;
       const button = this.add
         .rectangle(x, y, 42, 28, 0xffffff)
         .setStrokeStyle(1, 0x999999)
         .setInteractive({ useHandCursor: true });
+      this.roomSelectorButtons.push(button);
 
       button.on('pointerdown', () => this.selectRoom(roomNumber));
       button.on('pointerover', () => button.setFillStyle(0xf2f2f2));
       button.on('pointerout', () => button.setFillStyle(0xffffff));
 
-      this.addText(x, y, String(roomNumber).padStart(2, '0'), {
+      this.addText(x, y, roomNumber === 0 ? 'CTRL' : String(roomNumber).padStart(2, '0'), {
         color: '#333333',
-        fontSize: '12px',
+        fontSize: roomNumber === 0 ? '9px' : '12px',
       }).setOrigin(0.5);
     }
   }
@@ -315,7 +329,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.roomCompleted) {
       if (Date.now() < this.roomAdvanceAvailableAt) return;
       if (this.returningToStart && !this.inControlRoom) {
-        this.showHint('No era hacia adelante. Probá con la otra combinación.');
+        this.showHint('Eso. Sigamos hacia adelante. No hay ningún motivo para volver sobre tus pasos.');
         return;
       }
       this.advanceRoom();
@@ -341,6 +355,13 @@ export default class GameScene extends Phaser.Scene {
       return;
     }
 
+    if (this.currentRoomNumber === 14 && !this.returningToStart) {
+      this.currentRoom?.handleShiftTab();
+      this.returningToStart = true;
+      this.createRoom(13);
+      return;
+    }
+
     if (this.returningToStart) {
       if (this.currentRoomNumber <= 1) {
         this.createRoom(0);
@@ -362,8 +383,9 @@ export default class GameScene extends Phaser.Scene {
 
   private createRoom(roomNumber: number, carryShiftIntoReleaseRoom = false): void {
     this.currentRoom?.exit();
+    this.roomNarrationIndex = 0;
     shiftMorseEasterEgg.setEnabled(roomNumber === 0);
-    const room = RoomFactory.create(roomNumber, this, this.progress, this.createRoomActions());
+    const room = RoomFactory.create(roomNumber, this, this.progress, this.createRoomActions(roomNumber));
 
     if (!room) {
       this.currentRoom = undefined;
@@ -381,12 +403,28 @@ export default class GameScene extends Phaser.Scene {
       : [...this.physicallyHeldShifts];
     room.enter(heldShiftsAtEntry);
 
-    if (this.inControlRoom) return;
+    if (this.inControlRoom) {
+      if (this.narrationPhase === 'replay' && !this.progress.backdoorAttempt) {
+        const controlPhase = this.returningToStart ? 'second-return' : 'replay';
+        const openingNarration = getRoomNarration(controlPhase, 0);
+        if (openingNarration) this.showHint(openingNarration);
+        this.roomNarrationIndex = 1;
+      }
+      return;
+    }
 
     if (this.returningToStart) {
+      this.roomSelectorButtons.forEach((button) => button.disableInteractive());
+      room.disableInteractions();
       this.roomCompleted = true;
-      this.statusText.setText(`${this.getReturnNarration(roomNumber)}\n\nSHIFT+TAB PARA SEGUIR`);
+      const returnPhase = this.narrationPhase === 'replay' ? 'second-return' : 'return';
+      this.statusText.setText(getRoomNarration(returnPhase, roomNumber) ?? 'No hace falta seguir retrocediendo.');
       return;
+    }
+
+    if (this.narrationPhase === 'replay' && this.roomNarrationIndex === 0) {
+      const replayNarration = this.getNextRoomNarration(roomNumber);
+      if (replayNarration) this.showHint(replayNarration);
     }
 
     if (this.progress.completedRooms.has(roomNumber)) {
@@ -395,12 +433,6 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private advanceRoom(): void {
-    if (this.currentRoomNumber === RoomFactory.roomCount && this.progress.completedRooms.has(this.currentRoomNumber)) {
-      this.returningToStart = true;
-      this.createRoom(this.currentRoomNumber - 1);
-      return;
-    }
-
     if (this.currentRoomNumber === 8 && this.progress.roomNineReturnPending) {
       this.progress.roomNineReturnPending = false;
       this.createRoom(9);
@@ -425,44 +457,53 @@ export default class GameScene extends Phaser.Scene {
     this.statusText.setText('PRESIONÁ SHIFT PARA VOLVER AL INICIO');
   }
 
-  private createRoomActions(): RoomActions {
+  private createRoomActions(roomNumber: number): RoomActions {
     return {
       setRoomPrompt: (text) => this.setRoomPrompt(text),
       clearRoomStatus: () => this.clearRoomStatus(),
-      showHint: (text) => this.showHint(text),
-      completeRoom: (text) => this.completeRoom(text),
+      showHint: (text) => this.showHint(this.getRoomCopy(roomNumber, text)),
+      completeRoom: (text) => this.completeRoom(this.getRoomCopy(roomNumber, text)),
       finishGame: (text) => this.finishGame(text),
       returnToStart: () => this.returnToStart(),
     };
   }
 
-  private readonly handleMorseVictory = (): void => {
-    // In the radio room this exact signal is the normal puzzle solution, so it must lead to the main ending.
-    if (this.currentRoomNumber === RoomFactory.roomCount) return;
-    this.scene.start('MorseVictoryScene');
+  private getRoomCopy(roomNumber: number, fallback: string): string {
+    if (this.narrationPhase !== 'replay') return fallback;
+    const phase = this.returningToStart ? 'second-return' : 'replay';
+    // Keep control-room phase narration out of ordinary menu navigation. Its second
+    // line is reserved for the exact Shift+ArrowDown action that reveals the option.
+    if (roomNumber === 0) {
+      if (!fallback.startsWith('...Y sí, todo es con Shift acá.')) return fallback;
+      return this.getNextRoomNarration(0, phase) ?? fallback;
+    }
+    return this.getNextRoomNarration(roomNumber, phase) ?? fallback;
+  }
+
+  private getNextRoomNarration(
+    roomNumber: number,
+    phase: 'replay' | 'second-return' = 'replay',
+  ): string | undefined {
+    const narration = getRoomNarration(phase, roomNumber, this.roomNarrationIndex);
+    if (narration) this.roomNarrationIndex += 1;
+    return narration;
+  }
+
+  private readonly handleMorseVictory = (event: Event): void => {
+    const signal = (event as CustomEvent<'SOS' | 'WIN'>).detail;
+    if (signal === 'WIN') {
+      if (this.currentRoomNumber !== 0 || (this.progress.unauthorizedControlRoomVisits ?? 0) < 3) return;
+      this.scene.start('MorseVictoryScene', { signal });
+      return;
+    }
+
+    // In the radio room, SOS is the normal puzzle solution and must lead to its main ending.
+    if (this.currentRoomNumber === 13) return;
+    this.scene.start('MorseVictoryScene', { signal: 'SOS' });
   };
 
   private cleanupMorseListener(): void {
     window.removeEventListener(MORSE_EASTER_EGG_EVENT, this.handleMorseVictory);
-  }
-
-  private getReturnNarration(roomNumber: number): string {
-    const lines: Record<number, string> = {
-      12: '¿Ya estás revisando todo? Todavía no había terminado de despedirme.',
-      11: 'Esta ya la conocés. No hace falta que la arregles otra vez.',
-      10: '¿Por qué estás volviendo? La salida estaba para el otro lado.',
-      9: 'La salida no era una prueba de velocidad. Aunque veo que te gusta insistir.',
-      8: 'No sigas mis indicaciones. Ya te ayudé bastante, ¿no?',
-      7: 'Ya los dejaste a todos en su lugar. No hace falta volver a contarlos.',
-      6: 'No hay nada acá que necesite más tiempo.',
-      5: 'Esa cerradura ya abrió. No vas a encontrar otra cosa detrás.',
-      4: 'No escribas nada. Ya no hace falta demostrar nada.',
-      3: 'No hagas clic. Esta vez te lo digo en serio.',
-      2: 'No hay otro Shift que te vaya a sacar de acá.',
-      1: 'No hay nada antes del principio. Volvé a la puerta.',
-    };
-
-    return lines[roomNumber] ?? 'No hace falta que revises todo el recorrido.';
   }
 
   private addText(

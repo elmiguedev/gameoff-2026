@@ -14,9 +14,10 @@ import ReleaseShiftRoomStrategy from './strategies/ReleaseShiftRoomStrategy';
 import MorseRadioRoomStrategy from './strategies/MorseRadioRoomStrategy';
 import AlternatingShiftRoomStrategy from './strategies/AlternatingShiftRoomStrategy';
 import NarratorControlRoomStrategy from './strategies/NarratorControlRoomStrategy';
+import FourteenthRoomStrategy from './strategies/FourteenthRoomStrategy';
 
 export default class RoomFactory {
-  static readonly roomCount = 13;
+  static readonly roomCount = 14;
 
   static create(
     roomNumber: number,
@@ -53,6 +54,8 @@ export default class RoomFactory {
         return new ReleaseShiftRoomStrategy(scene, progress, actions);
       case 13:
         return new MorseRadioRoomStrategy(scene, progress, actions);
+      case 14:
+        return new FourteenthRoomStrategy(scene, progress, actions);
       default:
         return undefined;
     }

@@ -45,8 +45,8 @@ export default class StartScene extends Phaser.Scene {
     }, StartScene.START_DELAY_MS);
   };
 
-  private readonly handleMorseVictory = (): void => {
-    this.startGame(false, true);
+  private readonly handleMorseVictory = (event: Event): void => {
+    if ((event as CustomEvent<'SOS' | 'WIN'>).detail === 'SOS') this.startGame(false, true);
   };
 
   constructor() {
@@ -84,11 +84,17 @@ export default class StartScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setResolution(Math.min(window.devicePixelRatio || 1, 2));
 
+    const narratorRestartTease = this.registry.get('narrator-restart-tease-pending') === true;
+    if (narratorRestartTease) {
+      this.registry.set('narrator-restart-tease-pending', false);
+      this.idleHintText.setText('Ja. Volviste. No encontraste la opción secreta. Era bastante sencilla. Ahora vas a tener que resolver las catorce salas de nuevo. Desde cero.');
+    }
+
     this.input.keyboard?.on('keydown', this.handleKeyDown);
     this.input.keyboard?.on('keyup', this.handleKeyUp);
     window.addEventListener(MORSE_EASTER_EGG_EVENT, this.handleMorseVictory);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanupInput, this);
-    this.resetIdleHintTimer();
+    if (!narratorRestartTease) this.resetIdleHintTimer();
   }
 
   private startGame(backdoorAttempt: boolean, secretVictory = false): void {
@@ -102,7 +108,7 @@ export default class StartScene extends Phaser.Scene {
     this.cleanupInput();
 
     if (secretVictory) {
-      this.scene.start('MorseVictoryScene');
+      this.scene.start('MorseVictoryScene', { signal: 'SOS' });
       return;
     }
 

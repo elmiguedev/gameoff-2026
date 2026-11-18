@@ -1,4 +1,4 @@
-import type Phaser from 'phaser';
+import Phaser from 'phaser';
 
 export type ShiftSide = 'left' | 'right';
 
@@ -8,6 +8,7 @@ export interface RoomProgress {
   roomNineReturnPending?: boolean;
   enteredControlRoomEarly?: boolean;
   backdoorAttempt?: boolean;
+  unauthorizedControlRoomVisits?: number;
 }
 
 export interface RoomActions {
@@ -48,6 +49,17 @@ export default abstract class RoomStrategy {
 
   exit(): void {
     this.roomContainer.destroy(true);
+  }
+
+  disableInteractions(): void {
+    const disableObject = (object: Phaser.GameObjects.GameObject): void => {
+      object.disableInteractive();
+      if (object instanceof Phaser.GameObjects.Container) {
+        object.list.forEach(disableObject);
+      }
+    };
+
+    this.roomContainer.list.forEach(disableObject);
   }
 
   handleKeyDown(event: KeyboardEvent): void {
