@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "dev:rooms": "vite --open \"/?dev=rooms\"",
-    "build": "vite build",
+    "build": "vite build --outDir build --base=./",
+    "deploy:itchio": "bun run build && mkdir -p deploy && rm -f deploy/shift-itchio.zip && cd build && zip -r ../deploy/shift-itchio.zip .",
     "preview": "vite preview",
     "typecheck": "bun check src/index.ts"
   },
