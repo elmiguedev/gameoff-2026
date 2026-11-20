@@ -52,6 +52,14 @@ export default abstract class RoomBaseStrategy {
     this.roomContainer.destroy(true);
   }
 
+  get displayContainer(): Phaser.GameObjects.Container {
+    return this.roomContainer;
+  }
+
+  prepareForEnding(): void {
+    this.setRoomObjectsVisible([]);
+  }
+
   disableInteractions(): void {
     const disableObject = (object: Phaser.GameObjects.GameObject): void => {
       object.disableInteractive();
@@ -124,6 +132,13 @@ export default abstract class RoomBaseStrategy {
   protected addRoomObject<T extends Phaser.GameObjects.GameObject>(object: T): T {
     this.roomContainer.add(object);
     return object;
+  }
+
+  protected setRoomObjectsVisible(visibleObjects: Phaser.GameObjects.GameObject[]): void {
+    this.roomContainer.list.forEach((object) => {
+      (object as Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Visible)
+        .setVisible(visibleObjects.includes(object));
+    });
   }
 
   protected onEnter(): void {}

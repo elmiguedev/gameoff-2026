@@ -21,6 +21,7 @@ export default class ControlRoomStrategy extends RoomBaseStrategy {
   private optionLabels: TypographyEntity[] = [];
   private panelLabel?: TypographyEntity;
   private indexList?: TypographyEntity;
+  private monitor?: ControlMonitorEntity;
 
   constructor(scene: Phaser.Scene, progress: RoomProgress, actions: RoomActions) {
     super(scene, progress, actions);
@@ -62,6 +63,10 @@ export default class ControlRoomStrategy extends RoomBaseStrategy {
     this.showHint(this.progress.enteredControlRoomEarly
       ? 'copy.otra-vez-vos-la-primera-vez-todavia-no-habia-empezado'
       : 'copy.ves-todo-sigue-bajo-control-incluso-vos');
+  }
+
+  override prepareForEnding(): void {
+    this.setRoomObjectsVisible(this.monitor ? [this.monitor] : []);
   }
 
   protected onShiftDown(_side: ShiftSide): void {
@@ -176,6 +181,10 @@ export default class ControlRoomStrategy extends RoomBaseStrategy {
     this.addLabel(640, 205, 'copy.operador-activo', 'control-label');
     this.addLabel(640, 340, 'copy.permisos-insuficientes', 'control-heading');
 
+    if (visits >= 5) {
+      this.showHint('copy.bueno-morse-de-win-para-que-no-haya-dudas');
+      return;
+    }
     if (visits === 3) {
       this.showHint('copy.no-tenes-permisos-para-estar-aca-aunque-s-o-s-no-es-el');
       return;
@@ -194,7 +203,7 @@ export default class ControlRoomStrategy extends RoomBaseStrategy {
   }
 
   private drawMonitor(): void {
-    this.addRoomObject(new ControlMonitorEntity(this.scene));
+    this.monitor = this.addRoomObject(new ControlMonitorEntity(this.scene));
   }
 
   private addLabel(

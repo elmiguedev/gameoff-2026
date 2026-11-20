@@ -9,6 +9,9 @@ import { morseInput } from './input/MorseInputComponent';
 window.addEventListener('keydown', morseInput.handleKeyDown, true);
 window.addEventListener('keyup', morseInput.handleKeyUp, true);
 window.addEventListener('blur', morseInput.resetOnBlur);
+window.addEventListener('keydown', (event) => {
+  if (event.code === 'Tab' && !event.shiftKey) event.preventDefault();
+}, true);
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,

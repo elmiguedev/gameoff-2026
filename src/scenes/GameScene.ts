@@ -23,6 +23,8 @@ interface PendingShiftPress {
   timerId: number;
 }
 
+type EndingStage = 'narrator' | 'disconnected' | 'transition';
+
 export default class GameScene extends Phaser.Scene {
   private static readonly SHIFT_TAB_GRACE_MS = 180;
   private static readonly ROOM_ADVANCE_DELAY_MS = 900;
@@ -42,10 +44,17 @@ export default class GameScene extends Phaser.Scene {
   private roomNarrationIndex = 0;
   private inControlRoom = false;
   private endingTransitionInProgress = false;
+  private endingStage?: EndingStage;
+  private completionTime = '00:00';
+  private completionSeconds = 0;
+  private completionMilliseconds = 0;
+  private readonly endingDisplayObjects: Phaser.GameObjects.GameObject[] = [];
   private waitingForEntryShiftRelease = true;
   private roomAdvanceAvailableAt = 0;
 
   private roomLabel!: TypographyEntity;
+  private runTimerLabel!: TypographyEntity;
+  private lastRunTimerText = '';
   private roomPrompt!: TypographyEntity;
   private operatorPanel!: OperatorPanelEntity;
   private roomSelectorButtons: Phaser.GameObjects.Rectangle[] = [];
@@ -72,6 +81,8 @@ export default class GameScene extends Phaser.Scene {
     this.roomNarrationIndex = 0;
     this.inControlRoom = false;
     this.endingTransitionInProgress = false;
+    this.endingStage = undefined;
+    this.endingDisplayObjects.length = 0;
     this.physicallyHeldShifts.clear();
     this.suppressedShiftReleases.clear();
     this.dispatchedShiftPresses.clear();
@@ -81,6 +92,7 @@ export default class GameScene extends Phaser.Scene {
     this.progress.firstShiftSide = undefined;
     this.progress.roomNineReturnPending = false;
     this.progress.backdoorAttempt = false;
+    this.lastRunTimerText = '';
     this.progress.enteredControlRoomEarly = data.enteredControlRoomEarly ?? false;
     this.waitingForEntryShiftRelease = !data.entryShiftAlreadyReleased;
     this.roomAdvanceAvailableAt = 0;
@@ -109,6 +121,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private enterRequestedRoom(data: GameSceneData): void {
+    this.startRunTimerIfNeeded();
+
     if (data.backdoorAttempt) {
       this.progress.enteredControlRoomEarly = true;
       this.progress.backdoorAttempt = true;
@@ -125,8 +139,16 @@ export default class GameScene extends Phaser.Scene {
     this.createInitialRoom();
   }
 
+  private startRunTimerIfNeeded(): void {
+    const startedAt = Number(this.registry.get('shift-run-started-at'));
+    if (Number.isFinite(startedAt) && startedAt > 0) return;
+
+    this.registry.set('shift-run-started-at', Date.now());
+  }
+
   override update(_time: number, delta: number): void {
     this.updateCurrentRoom(delta);
+    this.updateRunTimer();
   }
 
   private updateCurrentRoom(delta: number): void {
@@ -170,40 +192,163 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  public finishGame(closingText: TranslationKey): void {
-    this.currentRoom?.exit();
-    this.currentRoom = undefined;
+  public finishGame(closingText: TranslationKey, narratorMessage?: TranslationKey): void {
+    if (this.endingTransitionInProgress) return;
+
+    this.completionTime = this.getCompletionTime();
+    this.registry.remove([
+      'shift-run-started-at',
+      'shift-control-unauthorized-visits',
+      'shift-backdoor-visit-pending',
+    ]);
     this.inControlRoom = false;
     this.returningToStart = false;
     this.showingPrototypeEnd = true;
     this.endingTransitionInProgress = true;
+    morseInput.setEnabled(false);
     BootloaderScene.stopBackgroundMusic();
+
+    if (narratorMessage) {
+      this.endingStage = 'narrator';
+      this.currentRoom?.prepareForEnding();
+      this.hideSceneObjectsExcept([
+        this.currentRoom?.displayContainer,
+        this.operatorPanel,
+      ]);
+      this.operatorPanel.showText(
+        `${t(narratorMessage)}\n\n${t('copy.press-enter-to-finish-ending')}`,
+      );
+      return;
+    }
+
+    this.currentRoom?.exit();
+    this.currentRoom = undefined;
+    this.showDisconnectedEnding(closingText);
+  }
+
+  private showDisconnectedEnding(
+    closingText: TranslationKey,
+    preserveRoomMonitor = false,
+  ): void {
+    this.endingStage = 'disconnected';
     this.playDisconnectTone();
 
-    this.children.list.forEach((child) => {
-      (child as Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Visible).setVisible(false);
-    });
-    const monitor = new ControlMonitorEntity(this).setDepth(2000);
+    let monitor: ControlMonitorEntity | undefined;
+    if (preserveRoomMonitor) {
+      this.currentRoom?.prepareForEnding();
+      this.hideSceneObjectsExcept([this.currentRoom?.displayContainer]);
+    } else {
+      this.currentRoom?.exit();
+      this.currentRoom = undefined;
+      this.hideSceneObjectsExcept([]);
+      monitor = new ControlMonitorEntity(this);
+    }
+    monitor?.setDepth(2000);
     const disconnectedLabel = new TypographyEntity(
       this,
       640,
-      340,
+      245,
       closingText,
       'ending-disconnect',
     ).setDepth(2001);
+    const completionTimeLabel = new TypographyEntity(
+      this,
+      640,
+      300,
+      `${t('copy.completed-in')} ${this.completionTime}`,
+      'ending-time',
+    ).setDepth(2001);
+    const completionComment = new TypographyEntity(
+      this,
+      640,
+      345,
+      this.getCompletionComment(),
+      'ending-time-note',
+    ).setDepth(2001);
+    const continuePrompt = new TypographyEntity(
+      this,
+      640,
+      395,
+      'copy.press-enter-to-restart',
+      'ending-time-note',
+    ).setDepth(2001);
+    if (monitor) this.endingDisplayObjects.push(monitor);
+    this.endingDisplayObjects.push(
+      disconnectedLabel,
+      completionTimeLabel,
+      completionComment,
+      continuePrompt,
+    );
 
-    this.time.delayedCall(3000, () => {
-      disconnectedLabel.destroy();
-      AudioManager.play(this, 'enter');
-      this.time.delayedCall(2000, () => {
-        this.cameras.main.setBackgroundColor('#ffffff');
-        monitor.destroy();
-        AudioManager.play(this, 'enter');
-        this.time.delayedCall(2000, () => {
-          this.registry.set('operator-new-session-pending', true);
-          this.scene.start('StartScene');
-        });
-      });
+  }
+
+  private getCompletionTime(): string {
+    const startedAt = Number(this.registry.get('shift-run-started-at'));
+    this.completionMilliseconds = Number.isFinite(startedAt) && startedAt > 0
+      ? Math.max(0, Date.now() - startedAt)
+      : 0;
+    this.completionSeconds = Math.floor(this.completionMilliseconds / 1000);
+    const hours = Math.floor(this.completionSeconds / 3600);
+    const minutes = Math.floor((this.completionSeconds % 3600) / 60);
+    const seconds = this.completionSeconds % 60;
+    const formattedTime = hours > 0
+      ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+      : `${String(Math.floor(this.completionSeconds / 60)).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    this.registry.set('shift-last-completion-time', formattedTime);
+    return formattedTime;
+  }
+
+  private getCompletionComment(): TranslationKey {
+    if (this.completionMilliseconds <= 30_000) return 'copy.completion-under-30-seconds';
+    if (this.completionMilliseconds < 60_000) return 'copy.completion-under-one-minute';
+    if (this.completionMilliseconds <= 5 * 60_000) return 'copy.completion-under-five-minutes';
+    if (this.completionMilliseconds <= 10 * 60_000) return 'copy.completion-under-ten-minutes';
+    if (this.completionMilliseconds <= 20 * 60_000) return 'copy.completion-under-twenty-minutes';
+    return 'copy.completion-over-twenty-minutes';
+  }
+
+  private hideSceneObjectsExcept(preservedObjects: Array<Phaser.GameObjects.GameObject | undefined>): void {
+    const preserved = new Set(preservedObjects.filter(
+      (object): object is Phaser.GameObjects.GameObject => object !== undefined,
+    ));
+    this.children.list.forEach((child) => {
+      if (preserved.has(child)) return;
+      (child as Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Visible).setVisible(false);
+    });
+  }
+
+  private handleEndingInput(event: KeyboardEvent): void {
+    if (event.repeat) return;
+
+    const isEnter = event.code === 'Enter' || event.code === 'NumpadEnter';
+    if (this.endingStage === 'narrator' && isEnter) {
+      event.preventDefault();
+      this.showDisconnectedEnding('copy.operador-desconectado', true);
+      return;
+    }
+
+    if (
+      this.endingStage === 'disconnected'
+      && isEnter
+    ) {
+      event.preventDefault();
+      this.returnToTitleAfterEnding();
+    }
+  }
+
+  private returnToTitleAfterEnding(): void {
+    if (this.endingStage !== 'disconnected') return;
+
+    this.endingStage = 'transition';
+    this.endingDisplayObjects.forEach((object) => object.destroy());
+    this.endingDisplayObjects.length = 0;
+    this.currentRoom?.exit();
+    this.currentRoom = undefined;
+    this.cameras.main.setBackgroundColor('#ffffff');
+    AudioManager.play(this, 'enter');
+    this.time.delayedCall(2000, () => {
+      this.registry.set('operator-new-session-pending', true);
+      this.scene.start('StartScene');
     });
   }
 
@@ -217,6 +362,27 @@ export default class GameScene extends Phaser.Scene {
 
   private createRoomLabel(): void {
     this.roomLabel = new TypographyEntity(this, 640, 56, '', 'room-number');
+    this.runTimerLabel = new TypographyEntity(this, 32, 56, '00:00', 'run-timer')
+      .setOrigin(0, 0.5);
+  }
+
+  private updateRunTimer(): void {
+    if (!this.runTimerLabel?.visible || this.endingStage) return;
+
+    const startedAt = Number(this.registry.get('shift-run-started-at'));
+    if (!Number.isFinite(startedAt) || startedAt <= 0) return;
+
+    const elapsedSeconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+    const hours = Math.floor(elapsedSeconds / 3600);
+    const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+    const seconds = elapsedSeconds % 60;
+    const text = hours > 0
+      ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+      : `${String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+    if (text === this.lastRunTimerText) return;
+    this.lastRunTimerText = text;
+    this.runTimerLabel.setText(text);
   }
 
   private createRoomPrompt(): void {
@@ -278,6 +444,12 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
+    if (this.endingStage) {
+      this.handleEndingInput(event);
+      return;
+    }
+    if (this.endingTransitionInProgress) return;
+
     if (event.code === 'Tab') {
       const isShiftTab = event.shiftKey || this.physicallyHeldShifts.size > 0;
       if (isShiftTab) {
@@ -319,6 +491,8 @@ export default class GameScene extends Phaser.Scene {
   };
 
   private readonly handleKeyUp = (event: KeyboardEvent): void => {
+    if (this.endingStage) return;
+
     const side = RoomBaseStrategy.getShiftSide(event.code);
     if (!side) {
       if (!this.waitingForEntryShiftRelease && !this.roomCompleted && !this.showingPrototypeEnd) {
@@ -415,6 +589,11 @@ export default class GameScene extends Phaser.Scene {
       return;
     }
 
+    if (this.currentRoomNumber === 1) {
+      this.enterBackdoorControlRoom();
+      return;
+    }
+
     this.currentRoom?.handleShiftTab();
 
     if (this.currentRoomNumber <= 1) {
@@ -423,6 +602,16 @@ export default class GameScene extends Phaser.Scene {
     }
 
     this.createRoom(this.currentRoomNumber - 1);
+  }
+
+  private enterBackdoorControlRoom(): void {
+    this.progress.enteredControlRoomEarly = true;
+    this.progress.backdoorAttempt = true;
+    const visits = Number(this.registry.get('shift-control-unauthorized-visits') ?? 0) + 1;
+    this.registry.set('shift-control-unauthorized-visits', visits);
+    this.registry.set('shift-backdoor-visit-pending', true);
+    this.progress.unauthorizedControlRoomVisits = visits;
+    this.createRoom(0);
   }
 
   private createRoom(roomNumber: number, carryShiftIntoReleaseRoom = false): void {
@@ -536,10 +725,24 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private readonly handleMorseVictory = (event: Event): void => {
+    if (this.endingTransitionInProgress) return;
+
     const signal = (event as CustomEvent<'SOS' | 'WIN'>).detail;
     if (signal === 'WIN') {
-      if (this.currentRoomNumber !== 0 || (this.progress.unauthorizedControlRoomVisits ?? 0) < 3) return;
-      this.scene.start('MorseVictoryScene', { signal });
+      if (
+        this.currentRoomNumber !== 0
+        || !this.progress.backdoorAttempt
+        || (this.progress.unauthorizedControlRoomVisits ?? 0) < 3
+      ) return;
+      this.finishGame(
+        'copy.operador-desconectado',
+        'copy.pudiste-apagarlo-no-era-la-idea',
+      );
+      return;
+    }
+
+    if (this.currentRoomNumber === 0 && this.progress.backdoorAttempt) {
+      this.showHint('copy.no-era-sos-el-codigo-es-win');
       return;
     }
 

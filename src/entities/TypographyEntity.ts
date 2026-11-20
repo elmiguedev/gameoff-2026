@@ -8,6 +8,7 @@ export type TypographyVariant =
   | 'operator'
   | 'start-operator'
   | 'room-number'
+  | 'run-timer'
   | 'room-prompt'
   | 'auxiliary'
   | 'room-instruction'
@@ -23,6 +24,8 @@ export type TypographyVariant =
   | 'lock-code'
   | 'loading'
   | 'ending-disconnect'
+  | 'ending-time'
+  | 'ending-time-note'
   | 'ending-heading'
   | 'ending-copy'
   | 'ending-label'
@@ -59,6 +62,12 @@ const VARIANT_STYLES: Record<Exclude<TypographyVariant, 'custom'>, TypographySty
     fontSize: '24px',
     fontStyle: '300',
   },
+  'run-timer': {
+    color: '#777777',
+    fontFamily: 'IBM Plex Sans, Arial, sans-serif',
+    fontSize: '16px',
+    fontStyle: '300',
+  },
   'room-prompt': { color: '#111111', fontSize: '56px', fontStyle: '500' },
   auxiliary: { color: '#666666', fontSize: '16px', fontStyle: '300' },
   'room-instruction': { color: '#111111', fontSize: '24px' },
@@ -74,6 +83,8 @@ const VARIANT_STYLES: Record<Exclude<TypographyVariant, 'custom'>, TypographySty
   'lock-code': { color: '#111111', fontSize: '42px' },
   loading: { color: '#555555', fontSize: '18px' },
   'ending-disconnect': { color: '#f2f2f2', fontSize: '26px', align: 'center' },
+  'ending-time': { color: '#f2f2f2', fontSize: '18px', align: 'center' },
+  'ending-time-note': { color: '#b8b8b8', fontSize: '13px', align: 'center' },
   'ending-heading': { color: '#111111', fontSize: '34px' },
   'ending-copy': { color: '#555555', fontSize: '17px' },
   'ending-label': { color: '#777777', fontSize: '14px' },
