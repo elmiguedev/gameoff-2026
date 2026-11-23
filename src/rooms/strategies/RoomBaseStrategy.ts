@@ -107,6 +107,10 @@ export default abstract class RoomBaseStrategy {
     this.onShiftTab();
   }
 
+  resetHeldShifts(): void {
+    this.heldShifts.clear();
+  }
+
   update(_delta: number): void {}
 
   protected isShiftHeld(side?: ShiftSide): boolean {

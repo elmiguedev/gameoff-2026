@@ -117,8 +117,24 @@ export default class GameScene extends Phaser.Scene {
   private bindSceneEvents(): void {
     window.removeEventListener(MORSE_SIGNAL_EVENT, this.handleMorseVictory);
     window.addEventListener(MORSE_SIGNAL_EVENT, this.handleMorseVictory);
+    window.removeEventListener('blur', this.handleWindowBlur);
+    window.addEventListener('blur', this.handleWindowBlur);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.cleanupMorseListener, this);
   }
+
+  private readonly handleWindowBlur = (): void => {
+    for (const pending of this.pendingShiftPresses.values()) {
+      window.clearTimeout(pending.timerId);
+    }
+    this.pendingShiftPresses.clear();
+    this.physicallyHeldShifts.clear();
+    this.suppressedShiftReleases.clear();
+    this.dispatchedShiftPresses.clear();
+    this.currentRoom?.resetHeldShifts();
+    this.currentRoom?.handleShiftVisualUp('left');
+    this.currentRoom?.handleShiftVisualUp('right');
+    this.waitingForEntryShiftRelease = false;
+  };
 
   private enterRequestedRoom(data: GameSceneData): void {
     this.startRunTimerIfNeeded();
@@ -753,6 +769,7 @@ export default class GameScene extends Phaser.Scene {
 
   private cleanupMorseListener(): void {
     window.removeEventListener(MORSE_SIGNAL_EVENT, this.handleMorseVictory);
+    window.removeEventListener('blur', this.handleWindowBlur);
   }
 
   private playDisconnectTone(): void {
