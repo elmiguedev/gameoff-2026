@@ -26,6 +26,8 @@ export type TypographyVariant =
   | 'ending-disconnect'
   | 'ending-time'
   | 'ending-time-note'
+  | 'hint-button'
+  | 'hint-ad-badge'
   | 'ending-heading'
   | 'ending-copy'
   | 'ending-label'
@@ -85,6 +87,8 @@ const VARIANT_STYLES: Record<Exclude<TypographyVariant, 'custom'>, TypographySty
   'ending-disconnect': { color: '#f2f2f2', fontSize: '26px', align: 'center' },
   'ending-time': { color: '#f2f2f2', fontSize: '18px', align: 'center' },
   'ending-time-note': { color: '#b8b8b8', fontSize: '13px', align: 'center' },
+  'hint-button': { color: '#333333', fontFamily: 'IBM Plex Sans, Arial, sans-serif', fontSize: '21px', fontStyle: '500', align: 'center' },
+  'hint-ad-badge': { color: '#ffffff', fontFamily: 'IBM Plex Sans, Arial, sans-serif', fontSize: '7px', fontStyle: '500', align: 'center' },
   'ending-heading': { color: '#111111', fontSize: '34px' },
   'ending-copy': { color: '#555555', fontSize: '17px' },
   'ending-label': { color: '#777777', fontSize: '14px' },

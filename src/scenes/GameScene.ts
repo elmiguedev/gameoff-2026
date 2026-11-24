@@ -6,9 +6,12 @@ import { morseInput } from '../input/MorseInputComponent';
 import { AudioManager } from '../audio/AudioManager';
 import AudioToggleEntity from '../entities/AudioToggleEntity';
 import ControlMonitorEntity from '../entities/ControlMonitorEntity';
+import HintButtonEntity from '../entities/HintButtonEntity';
 import OperatorPanelEntity from '../entities/OperatorPanelEntity';
 import TypographyEntity from '../entities/TypographyEntity';
 import { getRoomNarration } from '../content/roomNarration';
+import { REWARDED_HINTS } from '../content/rewardedHints';
+import { rewardedHintService } from '../ads/RewardedHintService';
 import BootloaderScene from './BootloaderScene';
 import { t, type TranslationKey } from '../i18n/i18n';
 
@@ -53,6 +56,7 @@ export default class GameScene extends Phaser.Scene {
   private roomAdvanceAvailableAt = 0;
 
   private roomLabel!: TypographyEntity;
+  private hintButton?: HintButtonEntity;
   private runTimerLabel!: TypographyEntity;
   private lastRunTimerText = '';
   private roomPrompt!: TypographyEntity;
@@ -107,6 +111,7 @@ export default class GameScene extends Phaser.Scene {
     this.createRoomLabel();
     this.createRoomPrompt();
     this.createStatusText();
+    this.createHintButton();
     if (new URLSearchParams(window.location.search).get('dev') === 'rooms') {
       this.createRoomSelector();
     }
@@ -190,6 +195,7 @@ export default class GameScene extends Phaser.Scene {
 
     AudioManager.play(this, 'confirm');
     this.roomCompleted = true;
+    this.hintButton?.hideForCompletedRoom();
     this.progress.completedRooms.add(this.currentRoomNumber);
     const requiresBriefDelay = this.currentRoomNumber === 9 || this.currentRoomNumber === 13;
     this.roomAdvanceAvailableAt = Date.now() + (requiresBriefDelay ? GameScene.ROOM_ADVANCE_DELAY_MS : 0);
@@ -408,6 +414,47 @@ export default class GameScene extends Phaser.Scene {
   private createStatusText(): void {
     this.operatorPanel = new OperatorPanelEntity(this);
   }
+
+  private createHintButton(): void {
+    if (!rewardedHintService.isAvailable) return;
+    this.hintButton = new HintButtonEntity(this, this.requestRewardedHint);
+  }
+
+  private readonly requestRewardedHint = (): void => {
+    const roomNumber = this.currentRoomNumber;
+    const pauseForAd = rewardedHintService.pausesGame;
+
+    if (pauseForAd) {
+      this.sound.pauseAll();
+      this.scene.pause();
+    }
+
+    const accepted = rewardedHintService.showRewardedHint(
+      () => {
+        if (roomNumber !== this.currentRoomNumber || this.endingTransitionInProgress) return;
+        const hint = REWARDED_HINTS[roomNumber];
+        if (!hint) return;
+        this.showHint(hint);
+        this.hintButton?.markUsed();
+      },
+      (rewarded) => {
+        if (!pauseForAd) return;
+        if (!rewarded && roomNumber === this.currentRoomNumber && !this.endingTransitionInProgress) {
+          this.showHint('copy.hint-ad-not-completed');
+        }
+        this.sound.resumeAll();
+        this.scene.resume('GameScene');
+      },
+    );
+
+    if (!accepted) {
+      if (pauseForAd) {
+        this.sound.resumeAll();
+        this.scene.resume('GameScene');
+      }
+      this.showHint('copy.hint-ad-unavailable');
+    }
+  };
 
   private createAudioControls(): void {
     AudioManager.attach(this);
@@ -645,6 +692,8 @@ export default class GameScene extends Phaser.Scene {
     this.currentRoomNumber = roomNumber;
     this.currentRoom = room;
     this.roomCompleted = false;
+    this.hintButton?.resetForRoom();
+    this.hintButton?.setVisible(true);
     this.inControlRoom = roomNumber === 0;
     this.roomLabel.setText(roomNumber === 0 ? t('copy.control') : String(roomNumber).padStart(2, '0'));
     this.roomLabel.setVisible(roomNumber !== 0);
@@ -702,6 +751,7 @@ export default class GameScene extends Phaser.Scene {
 
   private showPrototypeEnd(): void {
     this.showingPrototypeEnd = true;
+    this.hintButton?.hideForCompletedRoom();
     this.currentRoom = undefined;
     this.roomLabel.setText('SHIFT');
     this.roomPrompt.setMessage('copy.fin-del-prototipo');
