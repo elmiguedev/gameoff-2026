@@ -693,7 +693,11 @@ export default class GameScene extends Phaser.Scene {
     this.currentRoom = room;
     this.roomCompleted = false;
     this.hintButton?.resetForRoom();
-    this.hintButton?.setVisible(true);
+    if (roomNumber === 0 && this.progress.backdoorAttempt) {
+      this.hintButton?.hideForCompletedRoom();
+    } else {
+      this.hintButton?.setVisible(true);
+    }
     this.inControlRoom = roomNumber === 0;
     this.roomLabel.setText(roomNumber === 0 ? t('copy.control') : String(roomNumber).padStart(2, '0'));
     this.roomLabel.setVisible(roomNumber !== 0);

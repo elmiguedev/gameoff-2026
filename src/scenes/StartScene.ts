@@ -7,6 +7,7 @@ import OperatorPanelEntity from '../entities/OperatorPanelEntity';
 import TypographyEntity from '../entities/TypographyEntity';
 import BootloaderScene from './BootloaderScene';
 import { getLanguage, type TranslationKey } from '../i18n/i18n';
+import { rewardedHintService } from '../ads/RewardedHintService';
 
 export default class StartScene extends Phaser.Scene {
   private static readonly START_DELAY_MS = 180;
@@ -77,6 +78,7 @@ export default class StartScene extends Phaser.Scene {
     this.createOperatorPanel();
     this.createPendingNotice();
     this.bindInput();
+    rewardedHintService.reportGameReady();
   }
 
   private resetSceneState(): void {

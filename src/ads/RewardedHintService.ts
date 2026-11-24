@@ -12,6 +12,7 @@ class RewardedHintService {
   private bridge?: PlaygamaBridge;
   private pendingReward?: PendingReward;
   private rewardCompleted = false;
+  private gameReadyReported = false;
 
   async initialize(): Promise<void> {
     if (import.meta.env.DEV) {
@@ -43,6 +44,15 @@ class RewardedHintService {
 
   get pausesGame(): boolean {
     return this.mode === 'playgama';
+  }
+
+  reportGameReady(): void {
+    if (this.mode !== 'playgama' || !this.bridge || this.gameReadyReported) return;
+
+    this.gameReadyReported = true;
+    void this.bridge.platform
+      .sendMessage(this.bridge.PLATFORM_MESSAGE.GAME_READY)
+      .catch((error) => console.error('No se pudo reportar que el juego está listo.', error));
   }
 
   showRewardedHint(
